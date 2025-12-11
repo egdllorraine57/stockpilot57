@@ -16,6 +16,7 @@ const { db } = window._firebase;
 
 const role = sessionStorage.getItem("userRole") || "defaut";
 const name = sessionStorage.getItem("userName") || "";
+const currentUserEmail = sessionStorage.getItem("userEmail") || "";
 
 const tabAffaires = document.getElementById("tab-affaires");
 const affairesSection = document.getElementById("affairesSection");
@@ -28,20 +29,9 @@ const affairesRef = collection(db, "affaires");
 // État local
 let affaires = [];
 
-// Gestion affichage onglet
-function showSection(sectionId) {
-  const sections = [
-    "articlesSection",
-    "mouvementsSection",
-    "reservationsSection",
-    "preparationsSection",
-    "affairesSection"
-  ];
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id === sectionId ? "block" : "none";
-  });
+// --- Gestion affichage onglets ---
 
+function activateTab(tabId, sectionId) {
   const tabs = [
     "tab-articles",
     "tab-mouvements",
@@ -49,20 +39,34 @@ function showSection(sectionId) {
     "tab-preparations",
     "tab-affaires"
   ];
+  const sections = [
+    "articlesSection",
+    "mouvementsSection",
+    "reservationsSection",
+    "preparationsSection",
+    "affairesSection"
+  ];
+
   tabs.forEach(id => {
     const btn = document.getElementById(id);
-    if (btn) btn.classList.toggle("active", id === `tab-${sectionId.replace("Section", "")}`);
+    if (btn) btn.classList.toggle("active", id === tabId);
+  });
+
+  sections.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.display = id === sectionId ? "block" : "none";
   });
 }
 
 if (tabAffaires) {
   tabAffaires.addEventListener("click", () => {
-    showSection("affairesSection");
+    activateTab("tab-affaires", "affairesSection");
     chargerAffaires();
   });
 }
 
-// Chargement des affaires
+// --- Chargement et affichage des affaires ---
+
 async function chargerAffaires() {
   affaires = [];
   affairesBody.innerHTML = "";
@@ -176,7 +180,7 @@ async function ouvrirModalDemandeAffaire() {
     code,
     libelle,
     demandeurName: name,
-    demandeurEmail: window.currentUserEmail || "", // optionnel, à stocker
+    demandeurEmail: currentUserEmail,
     date: serverTimestamp(),
     statut: "en_attente"
   });
