@@ -51,6 +51,8 @@
           <button id="btnAdd">Ajouter un article</button>
           <button id="btnEdit" disabled>Modifier</button>
           <button id="btnDelete" disabled>Supprimer</button>
+          <button id="btnImportArticles">Importer Excel</button>
+          <input type="file" id="importFileInput" accept=".xlsx,.xls" style="display:none;">
         </div>
       </div>
 
@@ -476,7 +478,8 @@
       </form>
     </div>
   </div>
-
+  
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.20.0/xlsx.full.min.js"></script>
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/article.js"></script>
   <script type="module" src="js/settings.js"></script>
@@ -545,6 +548,7 @@
 
 </body>
 </html>
+
 
 
 
