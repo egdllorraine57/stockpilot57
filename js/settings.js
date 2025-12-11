@@ -12,371 +12,398 @@ import {
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 import { signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-const { db, auth } = window._firebase;
+document.addEventListener("DOMContentLoaded", () => {
 
-const role = sessionStorage.getItem("userRole") || "defaut";
-const name = sessionStorage.getItem("userName") || "";
+  const { db, auth } = window._firebase;
 
-// Tu peux, si tu veux, stocker aussi l'email courant dans sessionStorage au login
-// et le réutiliser ici (pour sendPasswordResetEmail, demandes, etc.)
-const currentUserEmail = sessionStorage.getItem("userEmail") || "";
-window.currentUserEmail = currentUserEmail;
+  const role = sessionStorage.getItem("userRole") || "defaut";
+  const name = sessionStorage.getItem("userName") || "";
+  const currentUserEmail = sessionStorage.getItem("userEmail") || "";
+  window.currentUserEmail = currentUserEmail;
 
-// Menu déroulant
-const userMenuToggle = document.getElementById("userMenuToggle");
-const userMenuDropdown = document.getElementById("userMenuDropdown");
+  // Menu déroulant
+  const userMenuToggle = document.getElementById("userMenuToggle");
+  const userMenuDropdown = document.getElementById("userMenuDropdown");
 
-// Modales (utilisateur / affaire / mot de passe)
-const userModalBackdrop = document.getElementById("userModalBackdrop");
-const userForm = document.getElementById("userForm");
-const inputUserName = document.getElementById("u_name");
-const selectUserRole = document.getElementById("u_role");
-const btnUserCancel = document.getElementById("btnUserCancel");
+  // Modales (utilisateur / affaire / mot de passe)
+  const userModalBackdrop = document.getElementById("userModalBackdrop");
+  const userForm = document.getElementById("userForm");
+  const inputUserName = document.getElementById("u_name");
+  const selectUserRole = document.getElementById("u_role");
+  const btnUserCancel = document.getElementById("btnUserCancel");
 
-const affaireModalBackdrop = document.getElementById("affaireModalBackdrop");
-const affaireForm = document.getElementById("affaireForm");
-const inputAffCode = document.getElementById("a_code");
-const inputAffLibelle = document.getElementById("a_libelle");
-const btnAffCancel = document.getElementById("btnAffCancel");
+  const affaireModalBackdrop = document.getElementById("affaireModalBackdrop");
+  const affaireForm = document.getElementById("affaireForm");
+  const inputAffCode = document.getElementById("a_code");
+  const inputAffLibelle = document.getElementById("a_libelle");
+  const btnAffCancel = document.getElementById("btnAffCancel");
 
-const pwdModalBackdrop = document.getElementById("pwdModalBackdrop");
-const pwdForm = document.getElementById("pwdForm");
-const inputPwdOld = document.getElementById("pwd_old");
-const inputPwdNew = document.getElementById("pwd_new");
-const inputPwdConfirm = document.getElementById("pwd_confirm");
-const btnPwdCancel = document.getElementById("btnPwdCancel");
+  const pwdModalBackdrop = document.getElementById("pwdModalBackdrop");
+  const pwdForm = document.getElementById("pwdForm");
+  const inputPwdOld = document.getElementById("pwd_old");
+  const inputPwdNew = document.getElementById("pwd_new");
+  const inputPwdConfirm = document.getElementById("pwd_confirm");
+  const btnPwdCancel = document.getElementById("btnPwdCancel");
 
-// Construction du menu selon rôle
-function buildUserMenu() {
-  userMenuDropdown.innerHTML = "";
+  // Construction du menu selon rôle
+  function buildUserMenu() {
+    if (!userMenuDropdown) return;
+    userMenuDropdown.innerHTML = "";
 
-  if (role === "admin") {
-    // 1. Création utilisateur
-    const btnUsers = document.createElement("button");
-    btnUsers.className = "user-menu-item";
-    btnUsers.textContent = "Créer un utilisateur";
-    btnUsers.addEventListener("click", () => {
+    if (role === "admin") {
+      // 1. Création utilisateur
+      const btnUsers = document.createElement("button");
+      btnUsers.className = "user-menu-item";
+      btnUsers.textContent = "Créer un utilisateur";
+      btnUsers.addEventListener("click", () => {
+        closeMenu();
+        openUserModal();
+      });
+      userMenuDropdown.appendChild(btnUsers);
+
+      // 2. Gestion affaires
+      const btnAff = document.createElement("button");
+      btnAff.className = "user-menu-item";
+      btnAff.textContent = "Gestion affaires";
+      btnAff.addEventListener("click", () => {
+        closeMenu();
+        openAffaireModal();
+      });
+      userMenuDropdown.appendChild(btnAff);
+
+      // 3. Supprimer un utilisateur (Firestore)
+      const btnDeleteUser = document.createElement("button");
+      btnDeleteUser.className = "user-menu-item";
+      btnDeleteUser.textContent = "Supprimer un utilisateur";
+      btnDeleteUser.addEventListener("click", () => {
+        closeMenu();
+        deleteUserPrompt();
+      });
+      userMenuDropdown.appendChild(btnDeleteUser);
+    } else {
+      // Cas utilisateur "defaut"
+
+      // 1. Modifier mon mot de passe (via email de réinitialisation)
+      const btnPwd = document.createElement("button");
+      btnPwd.className = "user-menu-item";
+      btnPwd.textContent = "Modifier mon mot de passe";
+      btnPwd.addEventListener("click", async () => {
+        closeMenu();
+        if (!currentUserEmail) {
+          alert("Adresse email introuvable pour cet utilisateur.");
+          return;
+        }
+        try {
+          await sendPasswordResetEmail(auth, currentUserEmail);
+          alert("Un email de réinitialisation de mot de passe vous a été envoyé.");
+        } catch (e) {
+          console.error(e);
+          alert("Erreur lors de l'envoi de l'email de réinitialisation.");
+        }
+      });
+      userMenuDropdown.appendChild(btnPwd);
+
+      // 2. Demande d'ouverture d'affaire
+      const btnDemandeAffaire = document.createElement("button");
+      btnDemandeAffaire.className = "user-menu-item";
+      btnDemandeAffaire.textContent = "Demande d'ouverture d'affaire";
+      btnDemandeAffaire.addEventListener("click", () => {
+        closeMenu();
+        if (window.affairesModule && window.affairesModule.ouvrirModalDemandeAffaire) {
+          window.affairesModule.ouvrirModalDemandeAffaire();
+        } else {
+          alert("Module affaires non chargé.");
+        }
+      });
+      userMenuDropdown.appendChild(btnDemandeAffaire);
+    }
+
+    // 4. Déconnexion pour tous
+    const btnLogout = document.createElement("button");
+    btnLogout.className = "user-menu-item";
+    btnLogout.textContent = "Déconnexion";
+    btnLogout.addEventListener("click", async () => {
       closeMenu();
-      openUserModal();
+      try {
+        await signOut(auth);
+      } catch (e) {
+        console.error("Erreur signOut", e);
+      }
+      sessionStorage.clear();
+      window.location.href = "index.html";
     });
-    userMenuDropdown.appendChild(btnUsers);
+    userMenuDropdown.appendChild(btnLogout);
+  }
 
-    // 2. Gestion affaires
-    const btnAff = document.createElement("button");
-    btnAff.className = "user-menu-item";
-    btnAff.textContent = "Gestion affaires";
-    btnAff.addEventListener("click", () => {
-      closeMenu();
-      openAffaireModal();
+  function openMenu() {
+    if (userMenuDropdown) userMenuDropdown.classList.add("open");
+  }
+  function closeMenu() {
+    if (userMenuDropdown) userMenuDropdown.classList.remove("open");
+  }
+
+  if (userMenuToggle && userMenuDropdown) {
+    userMenuToggle.addEventListener("click", () => {
+      if (userMenuDropdown.classList.contains("open")) {
+        closeMenu();
+      } else {
+        openMenu();
+      }
     });
-    userMenuDropdown.appendChild(btnAff);
 
-    // 3. Supprimer un utilisateur (Firestore)
-    const btnDeleteUser = document.createElement("button");
-    btnDeleteUser.className = "user-menu-item";
-    btnDeleteUser.textContent = "Supprimer un utilisateur";
-    btnDeleteUser.addEventListener("click", () => {
-      closeMenu();
-      deleteUserPrompt();
+    document.addEventListener("click", (e) => {
+      if (!userMenuToggle.contains(e.target) && !userMenuDropdown.contains(e.target)) {
+        closeMenu();
+      }
     });
-    userMenuDropdown.appendChild(btnDeleteUser);
-  } else {
-    // Cas utilisateur "defaut"
+  }
 
-    // 1. Modifier mon mot de passe (via email de réinitialisation)
-    const btnPwd = document.createElement("button");
-    btnPwd.className = "user-menu-item";
-    btnPwd.textContent = "Modifier mon mot de passe";
-    btnPwd.addEventListener("click", async () => {
-      closeMenu();
-      if (!currentUserEmail) {
-        alert("Adresse email introuvable pour cet utilisateur.");
+  // --- Modale Utilisateur (admin) ---
+
+  function openUserModal() {
+    if (role !== "admin" || !userForm || !userModalBackdrop) return;
+    userForm.reset();
+    if (selectUserRole) selectUserRole.value = "defaut";
+    userModalBackdrop.classList.add("open");
+    if (inputUserName) inputUserName.focus();
+  }
+
+  function closeUserModal() {
+    if (userModalBackdrop) userModalBackdrop.classList.remove("open");
+  }
+
+  if (userForm) {
+    userForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (role !== "admin") return;
+
+      const nameNew = inputUserName.value.trim();
+      const roleNew = selectUserRole.value;
+      if (!nameNew) return;
+
+      const emailNew = prompt("Email de l'utilisateur (il faudra créer ce compte dans Authentication) :");
+      if (!emailNew) return;
+
+      await addDoc(collection(db, "users"), {
+        name: nameNew,
+        email: emailNew,
+        role: roleNew
+      });
+
+      closeUserModal();
+      alert("Utilisateur créé côté Firestore. Pensez à créer/modifier le compte dans Authentication et éventuellement lui envoyer un email de réinitialisation.");
+    });
+  }
+
+  if (btnUserCancel) {
+    btnUserCancel.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeUserModal();
+    });
+  }
+
+  const userModalClose = document.getElementById("userModalClose");
+  if (userModalClose) {
+    userModalClose.addEventListener("click", () => {
+      closeUserModal();
+    });
+  }
+
+  if (userModalBackdrop) {
+    userModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === userModalBackdrop) closeUserModal();
+    });
+  }
+
+  // Suppression utilisateur (Firestore)
+  async function deleteUserPrompt() {
+    if (role !== "admin") return;
+    const target = prompt("Nom (name) de l'utilisateur à supprimer :");
+    if (!target) return;
+
+    const q = query(collection(db, "users"), where("name", "==", target));
+    const snap = await getDocs(q);
+
+    if (snap.empty) {
+      alert("Utilisateur non trouvé.");
+      return;
+    }
+
+    const ok = confirm(`Supprimer l'utilisateur ${target} côté Firestore ?`);
+    if (!ok) return;
+
+    await deleteDoc(snap.docs[0].ref);
+    alert("Utilisateur supprimé de Firestore. Pensez à le supprimer aussi dans Authentication si nécessaire.");
+  }
+
+  // --- Modale Affaire (admin seulement) ---
+
+  function openAffaireModal() {
+    if (role !== "admin" || !affaireForm || !affaireModalBackdrop) return;
+    affaireForm.reset();
+    affaireModalBackdrop.classList.add("open");
+    if (inputAffCode) inputAffCode.focus();
+  }
+
+  function closeAffaireModal() {
+    if (affaireModalBackdrop) affaireModalBackdrop.classList.remove("open");
+  }
+
+  if (affaireForm) {
+    affaireForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      if (role !== "admin") return;
+
+      const code = inputAffCode.value.trim();
+      const libelle = inputAffLibelle.value.trim();
+      if (!code) return;
+
+      // Code unique
+      const qCode = query(collection(db, "affaires"), where("code", "==", code));
+      const snap = await getDocs(qCode);
+      if (!snap.empty) {
+        alert("Ce code affaire existe déjà.");
         return;
       }
-      try {
-        await sendPasswordResetEmail(auth, currentUserEmail);
-        alert("Un email de réinitialisation de mot de passe vous a été envoyé.");
-      } catch (e) {
-        console.error(e);
-        alert("Erreur lors de l'envoi de l'email de réinitialisation.");
-      }
-    });
-    userMenuDropdown.appendChild(btnPwd);
 
-    // 2. Demande d'ouverture d'affaire
-    const btnDemandeAffaire = document.createElement("button");
-    btnDemandeAffaire.className = "user-menu-item";
-    btnDemandeAffaire.textContent = "Demande d'ouverture d'affaire";
-    btnDemandeAffaire.addEventListener("click", () => {
-      closeMenu();
-      if (window.affairesModule && window.affairesModule.ouvrirModalDemandeAffaire) {
-        window.affairesModule.ouvrirModalDemandeAffaire();
-      } else {
-        alert("Module affaires non chargé.");
-      }
-    });
-    userMenuDropdown.appendChild(btnDemandeAffaire);
-  }
-
-  // 4. Déconnexion pour tous
-  const btnLogout = document.createElement("button");
-  btnLogout.className = "user-menu-item";
-  btnLogout.textContent = "Déconnexion";
-  btnLogout.addEventListener("click", async () => {
-    closeMenu();
-    try {
-      await signOut(auth);
-    } catch (e) {
-      console.error("Erreur signOut", e);
-    }
-    sessionStorage.clear();
-    window.location.href = "index.html";
-  });
-  userMenuDropdown.appendChild(btnLogout);
-}
-
-function openMenu() {
-  userMenuDropdown.classList.add("open");
-}
-function closeMenu() {
-  userMenuDropdown.classList.remove("open");
-}
-
-userMenuToggle.addEventListener("click", () => {
-  if (userMenuDropdown.classList.contains("open")) {
-    closeMenu();
-  } else {
-    openMenu();
-  }
-});
-
-document.addEventListener("click", (e) => {
-  if (!userMenuToggle.contains(e.target) && !userMenuDropdown.contains(e.target)) {
-    closeMenu();
-  }
-});
-
-// --- Modale Utilisateur (admin) ---
-
-function openUserModal() {
-  if (role !== "admin") return;
-  userForm.reset();
-  selectUserRole.value = "defaut";
-  userModalBackdrop.classList.add("open");
-  inputUserName.focus();
-}
-
-function closeUserModal() {
-  userModalBackdrop.classList.remove("open");
-}
-
-userForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (role !== "admin") return;
-
-  const nameNew = inputUserName.value.trim();
-  const roleNew = selectUserRole.value;
-  if (!nameNew) return;
-
-  const emailNew = prompt("Email de l'utilisateur (il faudra créer ce compte dans Authentication) :");
-  if (!emailNew) return;
-
-  await addDoc(collection(db, "users"), {
-    name: nameNew,
-    email: emailNew,
-    role: roleNew
-  });
-
-  closeUserModal();
-  alert("Utilisateur créé côté Firestore. Pensez à créer/modifier le compte dans Authentication et éventuellement lui envoyer un email de réinitialisation.");
-});
-
-btnUserCancel.addEventListener("click", (e) => {
-  e.preventDefault();
-  closeUserModal();
-});
-
-document.getElementById("userModalClose").addEventListener("click", () => {
-  closeUserModal();
-});
-
-userModalBackdrop.addEventListener("click", (e) => {
-  if (e.target === userModalBackdrop) closeUserModal();
-});
-
-// Suppression utilisateur (Firestore)
-async function deleteUserPrompt() {
-  if (role !== "admin") return;
-  const target = prompt("Nom (name) de l'utilisateur à supprimer :");
-  if (!target) return;
-
-  const q = query(collection(db, "users"), where("name", "==", target));
-  const snap = await getDocs(q);
-
-  if (snap.empty) {
-    alert("Utilisateur non trouvé.");
-    return;
-  }
-
-  const ok = confirm(`Supprimer l'utilisateur ${target} côté Firestore ?`);
-  if (!ok) return;
-
-  await deleteDoc(snap.docs[0].ref);
-  alert("Utilisateur supprimé de Firestore. Pensez à le supprimer aussi dans Authentication si nécessaire.");
-}
-
-// --- Modale Affaire (admin seulement) ---
-
-function openAffaireModal() {
-  if (role !== "admin") return;
-  affaireForm.reset();
-  affaireModalBackdrop.classList.add("open");
-  inputAffCode.focus();
-}
-
-function closeAffaireModal() {
-  affaireModalBackdrop.classList.remove("open");
-}
-
-affaireForm.addEventListener("submit", async (e) => {
-  e.preventDefault();
-  if (role !== "admin") return;
-
-  const code = inputAffCode.value.trim();
-  const libelle = inputAffLibelle.value.trim();
-  if (!code) return;
-
-  // Code unique
-  const qCode = query(collection(db, "affaires"), where("code", "==", code));
-  const snap = await getDocs(qCode);
-  if (!snap.empty) {
-    alert("Ce code affaire existe déjà.");
-    return;
-  }
-
-  await addDoc(collection(db, "affaires"), {
-    code,
-    libelle,
-    statut: "futur",
-    dateCreation: new Date()
-  });
-
-  closeAffaireModal();
-  alert("Affaire créée avec statut 'futur'. Pensez à la passer en 'ouvert' lorsqu'elle sera active.");
-});
-
-btnAffCancel.addEventListener("click", (e) => {
-  e.preventDefault();
-  closeAffaireModal();
-});
-
-document.getElementById("affaireModalClose").addEventListener("click", () => {
-  closeAffaireModal();
-});
-
-affaireModalBackdrop.addEventListener("click", (e) => {
-  if (e.target === affaireModalBackdrop) closeAffaireModal();
-});
-
-// --- Modale Mot de passe (pour plus tard, si tu veux gestion avancée dans l'UI) ---
-// Ici on ne fait rien, car on utilise sendPasswordResetEmail directement dans le menu defaut.
-
-pwdForm.addEventListener("submit", (e) => {
-  e.preventDefault();
-  alert("La modification du mot de passe est gérée par l'email de réinitialisation dans le menu.");
-});
-
-btnPwdCancel.addEventListener("click", (e) => {
-  e.preventDefault();
-  pwdModalBackdrop.classList.remove("open");
-});
-
-document.getElementById("pwdModalClose").addEventListener("click", () => {
-  pwdModalBackdrop.classList.remove("open");
-});
-
-pwdModalBackdrop.addEventListener("click", (e) => {
-  if (e.target === pwdModalBackdrop) pwdModalBackdrop.classList.remove("open");
-});
-
-// Initialise le menu
-buildUserMenu();
-
-
-// --- Tri générique des tableaux par clic sur l'en-tête ---
-
-function makeTableSortable(table, columnTypes) {
-  if (!table) return;
-  const thead = table.querySelector("thead");
-  if (!thead) return;
-
-  const ths = Array.from(thead.querySelectorAll("th"));
-  ths.forEach((th, colIndex) => {
-    th.style.cursor = "pointer";
-    th.dataset.sortDir = "none"; // none | asc | desc
-
-    // Ajout span icône si pas déjà présent
-    let iconSpan = th.querySelector(".sort-icon");
-    if (!iconSpan) {
-      iconSpan = document.createElement("span");
-      iconSpan.className = "sort-icon";
-      iconSpan.style.marginLeft = "4px";
-      th.appendChild(iconSpan);
-    }
-
-    const updateIcon = () => {
-      const dir = th.dataset.sortDir;
-      if (dir === "asc") iconSpan.textContent = "▲";
-      else if (dir === "desc") iconSpan.textContent = "▼";
-      else iconSpan.textContent = "";
-    };
-
-    updateIcon();
-
-    th.addEventListener("click", () => {
-      const current = th.dataset.sortDir;
-      const newDir = current === "asc" ? "desc" : "asc";
-
-      // Reset autres colonnes
-      ths.forEach((h) => {
-        if (h !== th) {
-          h.dataset.sortDir = "none";
-          const icon = h.querySelector(".sort-icon");
-          if (icon) icon.textContent = "";
-        }
+      await addDoc(collection(db, "affaires"), {
+        code,
+        libelle,
+        statut: "futur",
+        dateCreation: new Date()
       });
 
-      th.dataset.sortDir = newDir;
+      closeAffaireModal();
+      alert("Affaire créée avec statut 'futur'. Pensez à la passer en 'ouvert' lorsqu'elle sera active.");
+    });
+  }
+
+  if (btnAffCancel) {
+    btnAffCancel.addEventListener("click", (e) => {
+      e.preventDefault();
+      closeAffaireModal();
+    });
+  }
+
+  const affaireModalClose = document.getElementById("affaireModalClose");
+  if (affaireModalClose) {
+    affaireModalClose.addEventListener("click", () => {
+      closeAffaireModal();
+    });
+  }
+
+  if (affaireModalBackdrop) {
+    affaireModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === affaireModalBackdrop) closeAffaireModal();
+    });
+  }
+
+  // --- Modale Mot de passe (non utilisée pour le moment) ---
+
+  if (pwdForm) {
+    pwdForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      alert("La modification du mot de passe est gérée par l'email de réinitialisation dans le menu.");
+    });
+  }
+
+  if (btnPwdCancel) {
+    btnPwdCancel.addEventListener("click", (e) => {
+      e.preventDefault();
+      if (pwdModalBackdrop) pwdModalBackdrop.classList.remove("open");
+    });
+  }
+
+  const pwdModalClose = document.getElementById("pwdModalClose");
+  if (pwdModalClose) {
+    pwdModalClose.addEventListener("click", () => {
+      if (pwdModalBackdrop) pwdModalBackdrop.classList.remove("open");
+    });
+  }
+
+  if (pwdModalBackdrop) {
+    pwdModalBackdrop.addEventListener("click", (e) => {
+      if (e.target === pwdModalBackdrop) pwdModalBackdrop.classList.remove("open");
+    });
+  }
+
+  // Initialise le menu
+  buildUserMenu();
+
+  // --- Tri générique des tableaux par clic sur l'en-tête ---
+  function makeTableSortable(table, columnTypes) {
+    if (!table) return;
+    const thead = table.querySelector("thead");
+    if (!thead) return;
+
+    const ths = Array.from(thead.querySelectorAll("th"));
+    ths.forEach((th, colIndex) => {
+      th.style.cursor = "pointer";
+      th.dataset.sortDir = "none"; // none | asc | desc
+
+      // Ajout span icône si pas déjà présent
+      let iconSpan = th.querySelector(".sort-icon");
+      if (!iconSpan) {
+        iconSpan = document.createElement("span");
+        iconSpan.className = "sort-icon";
+        iconSpan.style.marginLeft = "4px";
+        th.appendChild(iconSpan);
+      }
+
+      const updateIcon = () => {
+        const dir = th.dataset.sortDir;
+        if (dir === "asc") iconSpan.textContent = "▲";
+        else if (dir === "desc") iconSpan.textContent = "▼";
+        else iconSpan.textContent = "";
+      };
+
       updateIcon();
 
-      const tbody = table.querySelector("tbody");
-      const rows = Array.from(tbody.querySelectorAll("tr"));
-      const type = columnTypes[colIndex] || "string"; // "string" | "number" | "date"
+      th.addEventListener("click", () => {
+        const current = th.dataset.sortDir;
+        const newDir = current === "asc" ? "desc" : "asc";
 
-      rows.sort((a, b) => {
-        const aText = a.cells[colIndex]?.textContent.trim() || "";
-        const bText = b.cells[colIndex]?.textContent.trim() || "";
-        let cmp = 0;
+        // Reset autres colonnes
+        ths.forEach((h) => {
+          if (h !== th) {
+            h.dataset.sortDir = "none";
+            const icon = h.querySelector(".sort-icon");
+            if (icon) icon.textContent = "";
+          }
+        });
 
-        if (type === "number") {
-          const aNum = parseFloat(aText.replace(/\s/g, "").replace(",", "."));
-          const bNum = parseFloat(bText.replace(/\s/g, "").replace(",", "."));
-          cmp = (aNum || 0) - (bNum || 0);
-        } else if (type === "date") {
-          const aTime = Date.parse(aText.split("/").reverse().join("-")) || 0;
-          const bTime = Date.parse(bText.split("/").reverse().join("-")) || 0;
-          cmp = aTime - bTime;
-        } else {
-          cmp = aText.localeCompare(bText, "fr", { sensitivity: "base" });
-        }
+        th.dataset.sortDir = newDir;
+        updateIcon();
 
-        return newDir === "asc" ? cmp : -cmp;
+        const tbody = table.querySelector("tbody");
+        const rows = Array.from(tbody.querySelectorAll("tr"));
+        const type = columnTypes[colIndex] || "string"; // "string" | "number" | "date"
+
+        rows.sort((a, b) => {
+          const aText = a.cells[colIndex]?.textContent.trim() || "";
+          const bText = b.cells[colIndex]?.textContent.trim() || "";
+          let cmp = 0;
+
+          if (type === "number") {
+            const aNum = parseFloat(aText.replace(/\s/g, "").replace(",", "."));
+            const bNum = parseFloat(bText.replace(/\s/g, "").replace(",", "."));
+            cmp = (aNum || 0) - (bNum || 0);
+          } else if (type === "date") {
+            const aTime = Date.parse(aText.split("/").reverse().join("-")) || 0;
+            const bTime = Date.parse(bText.split("/").reverse().join("-")) || 0;
+            cmp = aTime - bTime;
+          } else {
+            cmp = aText.localeCompare(bText, "fr", { sensitivity: "base" });
+          }
+
+          return newDir === "asc" ? cmp : -cmp;
+        });
+
+        rows.forEach((r) => tbody.appendChild(r));
       });
-
-      rows.forEach((r) => tbody.appendChild(r));
     });
-  });
-}
+  }
 
-window.makeTableSortable = makeTableSortable;
+  window.makeTableSortable = makeTableSortable;
 
+}); // fin DOMContentLoaded
