@@ -2,12 +2,9 @@
 
 import {
   collection,
-  addDoc,
   getDocs,
   query,
-  where,
   orderBy,
-  serverTimestamp,
   updateDoc,
   doc,
   deleteDoc
@@ -17,8 +14,6 @@ document.addEventListener("DOMContentLoaded", () => {
   const { db } = window._firebase;
 
   const role = sessionStorage.getItem("userRole") || "defaut";
-  const name = sessionStorage.getItem("userName") || "";
-  const currentUserEmail = sessionStorage.getItem("userEmail") || "";
 
   const searchInput = document.getElementById("affairesSearchInput");
   const affairesBody = document.getElementById("affairesBody");
@@ -46,8 +41,7 @@ document.addEventListener("DOMContentLoaded", () => {
         id: d.id,
         code: data.code || "",
         libelle: data.libelle || "",
-        statut: data.statut || "futur",
-        dateCreation: data.dateCreation
+        statut: data.statut || "ouvert"  // info affichée uniquement
       });
     });
 
@@ -58,7 +52,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (!affairesBody) return;
     affairesBody.innerHTML = "";
 
-    // réinitialiser sélection
     selectedAffaireId = null;
     if (btnAffEdit) btnAffEdit.disabled = true;
     if (btnAffDelete) btnAffDelete.disabled = true;
@@ -75,40 +68,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const tdStatut = document.createElement("td");
       tdStatut.textContent = a.statut;
 
-      const tdDate = document.createElement("td");
-      if (a.dateCreation && a.dateCreation.toDate) {
-        tdDate.textContent = a.dateCreation.toDate().toLocaleString("fr-FR");
-      } else {
-        tdDate.textContent = "";
-      }
-
-      const tdActions = document.createElement("td");
-      if (role === "admin") {
-        const select = document.createElement("select");
-        ["futur", "ouvert", "clos"].forEach(st => {
-          const opt = document.createElement("option");
-          opt.value = st;
-          opt.textContent = st;
-          if (st === a.statut) opt.selected = true;
-          select.appendChild(opt);
-        });
-        select.addEventListener("change", async () => {
-          const newStatut = select.value;
-          await updateDoc(doc(db, "affaires", a.id), { statut: newStatut });
-          a.statut = newStatut;
-        });
-        tdActions.appendChild(select);
-      } else {
-        tdActions.textContent = "-";
-      }
-
       tr.appendChild(tdCode);
       tr.appendChild(tdLib);
       tr.appendChild(tdStatut);
-      tr.appendChild(tdDate);
-      tr.appendChild(tdActions);
 
-      // sélection de ligne pour Edit / Delete
       tr.addEventListener("click", () => {
         Array.from(affairesBody.querySelectorAll("tr")).forEach(r => r.classList.remove("selected"));
         tr.classList.add("selected");
@@ -123,7 +86,8 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Filtre
+  // --- Filtre ---
+
   if (searchInput) {
     searchInput.addEventListener("input", () => {
       const q = searchInput.value.trim().toLowerCase();
@@ -144,14 +108,16 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- Boutons Ajouter / Modifier / Supprimer (admin uniquement) ---
 
-  // on s'appuie sur la modale Affaire existante pilotée par settings.js.
-  // settings.js doit exposer window.openAffaireModalFromAffaires(affaire|null)
+  // Les créations / modifs (code, libellé, statut) sont gérées dans la modale Affaire
+  // via window.openAffaireModalFromAffaires exposée par settings.js
 
   if (role === "admin") {
     if (btnAffAdd) {
       btnAffAdd.addEventListener("click", () => {
         if (typeof window.openAffaireModalFromAffaires === "function") {
-          window.openAffaireModalFromAffaires(null); // création
+          // Création : statut géré dans la modale, mais à l'enregistrement
+          // tu as prévu que la création passe en "ouvert"
+          window.openAffaireModalFromAffaires(null);
         } else {
           alert("Ouverture modale affaire non câblée (openAffaireModalFromAffaires).");
         }
@@ -167,7 +133,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const affaire = affaires.find(a => a.id === selectedAffaireId);
         if (!affaire) return;
         if (typeof window.openAffaireModalFromAffaires === "function") {
-          window.openAffaireModalFromAffaires(affaire); // modification
+          window.openAffaireModalFromAffaires(affaire);
         } else {
           alert("Ouverture modale affaire non câblée (openAffaireModalFromAffaires).");
         }
@@ -186,8 +152,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const ok = confirm(`Supprimer l'affaire ${affaire.code} ?`);
         if (!ok) return;
 
-        // tu peux choisir : fermeture logique (statut) ou suppression physique
-        // ici: suppression physique
         await deleteDoc(doc(db, "affaires", selectedAffaireId));
 
         await chargerAffaires();
@@ -197,15 +161,17 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
   } else {
-    // rôle defaut : on masque les boutons
     if (btnAffAdd) btnAffAdd.style.display = "none";
     if (btnAffEdit) btnAffEdit.style.display = "none";
     if (btnAffDelete) btnAffDelete.style.display = "none";
   }
 
-  // Expose quelques fonctions si besoin
+  // Expose pour rechargement après modale
   window.affairesModule = {
     chargerAffaires
   };
 
-}); // fin DOMContentLoaded
+  // Premier chargement quand on arrive sur l’onglet
+  // (l’onglet l’appelle déjà via home.html, mais ici au cas où)
+  // chargerAffaires();
+});
