@@ -208,13 +208,267 @@
     </section>
 
   </main>
+<!-- Modale Article -->
+  <div class="modal-backdrop" id="articleModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="articleModalTitle">
+      <div class="modal-header">
+        <h2 id="articleModalTitle">Article</h2>
+        <button class="modal-close" id="articleModalClose" aria-label="Fermer">×</button>
+      </div>
 
-  <!-- Modales (inchangées) -->
-  <!-- ... tout le bloc de modales que tu as déjà, inchangé ... -->
+      <form id="articleForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div class="full">
+              <label for="f_marque">Marque</label>
+              <input type="text" id="f_marque" required>
+            </div>
 
-  <!-- (Je ne recopie pas toutes les modales ici pour ne pas faire un pavé,
-       tu gardes exactement tes blocs Modale Article / Utilisateur / Affaire /
-       Mot de passe / Mouvement / Panier tels qu'ils sont déjà dans ton fichier.) -->
+            <div>
+              <label for="f_reference">Référence</label>
+              <input type="text" id="f_reference">
+            </div>
+
+            <div>
+              <label for="f_unite">Unité</label>
+              <select id="f_unite">
+                <option value="u">u</option>
+                <option value="ml">ml</option>
+                <option value="kg">kg</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label for="f_libelle">Libellé</label>
+              <input type="text" id="f_libelle">
+            </div>
+
+            <div>
+              <label for="f_categorie">Catégorie</label>
+              <input type="text" id="f_categorie">
+            </div>
+
+            <div>
+              <label for="f_allee">Allée</label>
+              <input type="text" id="f_allee">
+            </div>
+
+            <div>
+              <label for="f_place">Place</label>
+              <input type="text" id="f_place">
+            </div>
+
+            <div>
+              <label for="f_niveau">Niveau</label>
+              <input type="text" id="f_niveau">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnModalCancel">Annuler</button>
+          <button class="primary" id="btnModalSave" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Utilisateur (admin) -->
+  <div class="modal-backdrop" id="userModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="userModalTitle">
+      <div class="modal-header">
+        <h2 id="userModalTitle">Gestion utilisateur</h2>
+        <button class="modal-close" id="userModalClose" aria-label="Fermer">×</button>
+      </div>
+
+      <form id="userForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div class="full">
+              <label for="u_name">Identifiant</label>
+              <input type="text" id="u_name" required>
+            </div>
+            <div>
+              <label for="u_role">Rôle</label>
+              <select id="u_role">
+                <option value="defaut">defaut</option>
+                <option value="admin">admin</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnUserCancel">Annuler</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Affaire -->
+  <div class="modal-backdrop" id="affaireModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="affaireModalTitle">
+      <div class="modal-header">
+        <h2 id="affaireModalTitle">Affaire</h2>
+        <button class="modal-close" id="affaireModalClose" aria-label="Fermer">×</button>
+      </div>
+
+      <form id="affaireForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div>
+              <label for="a_code">Code affaire</label>
+              <input type="text" id="a_code" required>
+            </div>
+            <div class="full">
+              <label for="a_libelle">Libellé</label>
+              <input type="text" id="a_libelle">
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnAffCancel">Annuler</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Modifier mot de passe -->
+  <div class="modal-backdrop" id="pwdModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="pwdModalTitle">
+      <div class="modal-header">
+        <h2 id="pwdModalTitle">Modifier mon mot de passe</h2>
+        <button class="modal-close" id="pwdModalClose" aria-label="Fermer">×</button>
+      </div>
+
+      <form id="pwdForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div class="full">
+              <label for="pwd_old">Mot de passe actuel</label>
+              <input type="password" id="pwd_old" required>
+            </div>
+            <div class="full">
+              <label for="pwd_new">Nouveau mot de passe</label>
+              <input type="password" id="pwd_new" required>
+            </div>
+            <div class="full">
+              <label for="pwd_confirm">Confirmer le nouveau mot de passe</label>
+              <input type="password" id="pwd_confirm" required>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnPwdCancel">Annuler</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Mouvement -->
+  <div class="modal-backdrop" id="mouvModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="mouvModalTitle">
+      <div class="modal-header">
+        <h2 id="mouvModalTitle">Créer un mouvement</h2>
+        <button class="modal-close" id="mouvModalClose" aria-label="Fermer">×</button>
+      </div>
+
+      <form id="mouvForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div>
+              <label for="m_sens">Sens</label>
+              <select id="m_sens">
+                <option value="entree">Entrée</option>
+                <option value="sortie">Sortie</option>
+              </select>
+            </div>
+
+            <div class="full">
+              <label for="m_article">Article</label>
+              <select id="m_article" required></select>
+            </div>
+
+            <div>
+              <label for="m_quantite">Quantité</label>
+              <input type="number" id="m_quantite" min="0.01" step="0.01" required>
+            </div>
+
+            <div id="m_prix_group">
+              <label for="m_prix">Prix unitaire</label>
+              <input type="number" id="m_prix" min="0" step="0.01">
+            </div>
+
+            <div class="full" id="m_affaire_group" style="display:none;">
+              <label for="m_affaire">Code affaire</label>
+              <select id="m_affaire">
+                <!-- options affaires -->
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnMouvCancel">Annuler</button>
+          <button class="primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modale Panier / Réservation -->
+  <div class="modal-backdrop" id="panierModalBackdrop">
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="panierModalTitle">
+      <div class="modal-header">
+        <h2 id="panierModalTitle">Nouvelle réservation</h2>
+        <button class="modal-close" id="panierModalClose" aria-label="Fermer">×</button>
+      </div>
+
+      <form id="panierForm">
+        <div class="modal-body">
+          <div class="modal-grid">
+            <div class="full">
+              <label for="p_affaire">Affaire</label>
+              <select id="p_affaire" required></select>
+            </div>
+            <div class="full">
+              <label for="p_date">Date mise à disposition</label>
+              <input type="date" id="p_date" required>
+            </div>
+          </div>
+
+          <div style="margin-top:16px;">
+            <button type="button" id="btnPanierAddLine">Ajouter un article</button>
+          </div>
+
+          <div class="inventory-table-wrapper" style="margin-top:8px;">
+            <table id="panierTable">
+              <thead>
+                <tr>
+                  <th>Article</th>
+                  <th>Quantité</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="panierBody">
+                <!-- lignes panier -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="modal-footer">
+          <button id="btnPanierCancel" type="button">Annuler</button>
+          <button class="primary" id="btnPanierValidate" type="submit">Valider le panier</button>
+        </div>
+      </form>
+    </div>
+  </div>
 
   <script type="module" src="js/firebase-config.js"></script>
   <script type="module" src="js/article.js"></script>
@@ -284,3 +538,4 @@
 
 </body>
 </html>
+
