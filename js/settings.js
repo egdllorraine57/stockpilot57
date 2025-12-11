@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const affaireForm = document.getElementById("affaireForm");
   const inputAffCode = document.getElementById("a_code");
   const inputAffLibelle = document.getElementById("a_libelle");
+  const selectAffStatut = document.getElementById("a_statut");
   const btnAffCancel = document.getElementById("btnAffCancel");
 
   const pwdModalBackdrop = document.getElementById("pwdModalBackdrop");
@@ -230,45 +231,47 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (affaireForm) {
-    affaireForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      if (role !== "admin") return;
+  affaireForm.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    if (role !== "admin") return;
 
-      const code = (inputAffCode?.value || "").trim();
-      const libelle = (inputAffLibelle?.value || "").trim();
-      if (!code) return;
+    const code = (inputAffCode?.value || "").trim();
+    const libelle = (inputAffLibelle?.value || "").trim();
+    const statut = selectAffStatut?.value || "ouvert";
+    if (!code) return;
 
-      // Vérif code unique pour création OU changement de code
-      const qCode = query(collection(db, "affaires"), where("code", "==", code));
-      const snap = await getDocs(qCode);
-
-      if (!snap.empty) {
-        const conflit = snap.docs[0];
-        if (!currentAffaireId || conflit.id !== currentAffaireId) {
-          alert("Ce code affaire existe déjà.");
-          return;
-        }
+    // Vérif code unique création / changement
+    const qCode = query(collection(db, "affaires"), where("code", "==", code));
+    const snap = await getDocs(qCode);
+    if (!snap.empty) {
+      const conflit = snap.docs[0];
+      if (!currentAffaireId || conflit.id !== currentAffaireId) {
+        alert("Ce code affaire existe déjà.");
+        return;
       }
+    }
 
-      if (!currentAffaireId) {
-        // Création
-        await addDoc(collection(db, "affaires"), {
-          code,
-          libelle,
-          statut: "ouvert",
-          dateCreation: new Date()
-        });
-        alert("Affaire créée avec statut 'ouvert'.");
-      } else {
-        // Mise à jour
-        await updateDoc(doc(db, "affaires", currentAffaireId), {
-          code,
-          libelle
-        });
-        alert("Affaire mise à jour.");
-      }
+    if (!currentAffaireId) {
+      // Création : tu veux que ça passe en "ouvert" par défaut,
+      // même si un autre statut est choisi, donc on force:
+      await addDoc(collection(db, "affaires"), {
+        code,
+        libelle,
+        statut: "ouvert",
+        dateCreation: new Date()
+      });
+      alert("Affaire créée avec statut 'ouvert'.");
+    } else {
+      // Mise à jour : on respecte le statut choisi dans la modale
+      await updateDoc(doc(db, "affaires", currentAffaireId), {
+        code,
+        libelle,
+        statut
+      });
+      alert("Affaire mise à jour.");
+    }
 
-      closeAffaireModal();
+    closeAffaireModal();
 
       // Rechargement éventuel de l'onglet Affaires
       if (window.affairesModule && typeof window.affairesModule.chargerAffaires === "function") {
@@ -425,4 +428,5 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.makeTableSortable = makeTableSortable;
 });
+
 
