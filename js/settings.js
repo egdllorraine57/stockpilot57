@@ -255,10 +255,10 @@ document.addEventListener("DOMContentLoaded", () => {
         await addDoc(collection(db, "affaires"), {
           code,
           libelle,
-          statut: "futur",
+          statut: "ouvert",
           dateCreation: new Date()
         });
-        alert("Affaire créée avec statut 'futur'.");
+        alert("Affaire créée avec statut 'ouvert'.");
       } else {
         // Mise à jour
         await updateDoc(doc(db, "affaires", currentAffaireId), {
@@ -425,3 +425,4 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.makeTableSortable = makeTableSortable;
 });
+
