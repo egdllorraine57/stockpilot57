@@ -302,22 +302,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // Exposé pour l'onglet Affaires
   window.openAffaireModalFromAffaires = function (affaire) {
-    if (role !== "admin") return;
-    if (!affaireForm || !affaireModalBackdrop) return;
+  if (role !== "admin") return;
+  if (!affaireForm || !affaireModalBackdrop) return;
 
-    affaireForm.reset();
-    if (affaire && affaire.id) {
-      currentAffaireId = affaire.id;
-      if (inputAffCode) inputAffCode.value = affaire.code || "";
-      if (inputAffLibelle) inputAffLibelle.value = affaire.libelle || "";
-    } else {
-      currentAffaireId = null;
-      if (inputAffCode) inputAffCode.value = "";
-      if (inputAffLibelle) inputAffLibelle.value = "";
-    }
-    affaireModalBackdrop.classList.add("open");
-    if (inputAffCode) inputAffCode.focus();
-  };
+  affaireForm.reset();
+  if (affaire && affaire.id) {
+    currentAffaireId = affaire.id;
+    if (inputAffCode) inputAffCode.value = affaire.code || "";
+    if (inputAffLibelle) inputAffLibelle.value = affaire.libelle || "";
+    if (selectAffStatut) selectAffStatut.value = affaire.statut || "ouvert";
+  } else {
+    currentAffaireId = null;
+    if (inputAffCode) inputAffCode.value = "";
+    if (inputAffLibelle) inputAffLibelle.value = "";
+    if (selectAffStatut) selectAffStatut.value = "ouvert";
+  }
+  affaireModalBackdrop.classList.add("open");
+  if (inputAffCode) inputAffCode.focus();
+};
 
   // =========================
   // MODALE MOT DE PASSE (non utilisée pour le moment)
@@ -428,5 +430,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   window.makeTableSortable = makeTableSortable;
 });
+
 
 
