@@ -13,7 +13,6 @@ import {
 import { signOut, sendPasswordResetEmail } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
 document.addEventListener("DOMContentLoaded", () => {
-
   const { db, auth } = window._firebase;
 
   const role = sessionStorage.getItem("userRole") || "defaut";
@@ -45,7 +44,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const inputPwdConfirm = document.getElementById("pwd_confirm");
   const btnPwdCancel = document.getElementById("btnPwdCancel");
 
-  // Construction du menu selon rôle
+  // =========================
+  // MENU UTILISATEUR
+  // =========================
   function buildUserMenu() {
     if (!userMenuDropdown) return;
     userMenuDropdown.innerHTML = "";
@@ -61,9 +62,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       userMenuDropdown.appendChild(btnUsers);
 
-      // 2. Gestion affaires (Supprimer/ on passe par l'onglet affaire)
-
-      // 3. Supprimer un utilisateur (Firestore)
+      // 2. Supprimer un utilisateur
       const btnDeleteUser = document.createElement("button");
       btnDeleteUser.className = "user-menu-item";
       btnDeleteUser.textContent = "Supprimer un utilisateur";
@@ -74,8 +73,6 @@ document.addEventListener("DOMContentLoaded", () => {
       userMenuDropdown.appendChild(btnDeleteUser);
     } else {
       // Cas utilisateur "defaut"
-
-      // 1. Modifier mon mot de passe (via email de réinitialisation)
       const btnPwd = document.createElement("button");
       btnPwd.className = "user-menu-item";
       btnPwd.textContent = "Modifier mon mot de passe";
@@ -94,23 +91,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       });
       userMenuDropdown.appendChild(btnPwd);
-
-      // 2. Demande d'ouverture d'affaire
-      const btnDemandeAffaire = document.createElement("button");
-      btnDemandeAffaire.className = "user-menu-item";
-      btnDemandeAffaire.textContent = "Demande d'ouverture d'affaire";
-      btnDemandeAffaire.addEventListener("click", () => {
-        closeMenu();
-        if (window.affairesModule && window.affairesModule.ouvrirModalDemandeAffaire) {
-          window.affairesModule.ouvrirModalDemandeAffaire();
-        } else {
-          alert("Module affaires non chargé.");
-        }
-      });
-      userMenuDropdown.appendChild(btnDemandeAffaire);
     }
 
-    // 4. Déconnexion pour tous
+    // Déconnexion pour tous
     const btnLogout = document.createElement("button");
     btnLogout.className = "user-menu-item";
     btnLogout.textContent = "Déconnexion";
@@ -150,8 +133,9 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Modale Utilisateur (admin) ---
-
+  // =========================
+  // MODALE UTILISATEUR (ADMIN)
+  // =========================
   function openUserModal() {
     if (role !== "admin" || !userForm || !userModalBackdrop) return;
     userForm.reset();
@@ -169,8 +153,8 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       if (role !== "admin") return;
 
-      const nameNew = inputUserName.value.trim();
-      const roleNew = selectUserRole.value;
+      const nameNew = (inputUserName?.value || "").trim();
+      const roleNew = selectUserRole?.value || "defaut";
       if (!nameNew) return;
 
       const emailNew = prompt("Email de l'utilisateur (il faudra créer ce compte dans Authentication) :");
@@ -228,11 +212,15 @@ document.addEventListener("DOMContentLoaded", () => {
     alert("Utilisateur supprimé de Firestore. Pensez à le supprimer aussi dans Authentication si nécessaire.");
   }
 
-  // --- Modale Affaire (admin seulement) ---
+  // =========================
+  // MODALE AFFAIRE (ADMIN)
+  // =========================
+  let currentAffaireId = null; // null = création, sinon update
 
   function openAffaireModal() {
     if (role !== "admin" || !affaireForm || !affaireModalBackdrop) return;
     affaireForm.reset();
+    currentAffaireId = null;
     affaireModalBackdrop.classList.add("open");
     if (inputAffCode) inputAffCode.focus();
   }
@@ -246,27 +234,46 @@ document.addEventListener("DOMContentLoaded", () => {
       e.preventDefault();
       if (role !== "admin") return;
 
-      const code = inputAffCode.value.trim();
-      const libelle = inputAffLibelle.value.trim();
+      const code = (inputAffCode?.value || "").trim();
+      const libelle = (inputAffLibelle?.value || "").trim();
       if (!code) return;
 
-      // Code unique
+      // Vérif code unique pour création OU changement de code
       const qCode = query(collection(db, "affaires"), where("code", "==", code));
       const snap = await getDocs(qCode);
+
       if (!snap.empty) {
-        alert("Ce code affaire existe déjà.");
-        return;
+        const conflit = snap.docs[0];
+        if (!currentAffaireId || conflit.id !== currentAffaireId) {
+          alert("Ce code affaire existe déjà.");
+          return;
+        }
       }
 
-      await addDoc(collection(db, "affaires"), {
-        code,
-        libelle,
-        statut: "futur",
-        dateCreation: new Date()
-      });
+      if (!currentAffaireId) {
+        // Création
+        await addDoc(collection(db, "affaires"), {
+          code,
+          libelle,
+          statut: "futur",
+          dateCreation: new Date()
+        });
+        alert("Affaire créée avec statut 'futur'.");
+      } else {
+        // Mise à jour
+        await updateDoc(doc(db, "affaires", currentAffaireId), {
+          code,
+          libelle
+        });
+        alert("Affaire mise à jour.");
+      }
 
       closeAffaireModal();
-      alert("Affaire créée avec statut 'futur'. Pensez à la passer en 'ouvert' lorsqu'elle sera active.");
+
+      // Rechargement éventuel de l'onglet Affaires
+      if (window.affairesModule && typeof window.affairesModule.chargerAffaires === "function") {
+        window.affairesModule.chargerAffaires();
+      }
     });
   }
 
@@ -290,8 +297,28 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // --- Modale Mot de passe (non utilisée pour le moment) ---
+  // Exposé pour l'onglet Affaires
+  window.openAffaireModalFromAffaires = function (affaire) {
+    if (role !== "admin") return;
+    if (!affaireForm || !affaireModalBackdrop) return;
 
+    affaireForm.reset();
+    if (affaire && affaire.id) {
+      currentAffaireId = affaire.id;
+      if (inputAffCode) inputAffCode.value = affaire.code || "";
+      if (inputAffLibelle) inputAffLibelle.value = affaire.libelle || "";
+    } else {
+      currentAffaireId = null;
+      if (inputAffCode) inputAffCode.value = "";
+      if (inputAffLibelle) inputAffLibelle.value = "";
+    }
+    affaireModalBackdrop.classList.add("open");
+    if (inputAffCode) inputAffCode.focus();
+  };
+
+  // =========================
+  // MODALE MOT DE PASSE (non utilisée pour le moment)
+  // =========================
   if (pwdForm) {
     pwdForm.addEventListener("submit", (e) => {
       e.preventDefault();
@@ -319,10 +346,12 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Initialise le menu
+  // =========================
+  // INIT
+  // =========================
   buildUserMenu();
 
-  // --- Tri générique des tableaux par clic sur l'en-tête ---
+  // Tri générique des tableaux
   function makeTableSortable(table, columnTypes) {
     if (!table) return;
     const thead = table.querySelector("thead");
@@ -333,7 +362,6 @@ document.addEventListener("DOMContentLoaded", () => {
       th.style.cursor = "pointer";
       th.dataset.sortDir = "none"; // none | asc | desc
 
-      // Ajout span icône si pas déjà présent
       let iconSpan = th.querySelector(".sort-icon");
       if (!iconSpan) {
         iconSpan = document.createElement("span");
@@ -355,7 +383,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const current = th.dataset.sortDir;
         const newDir = current === "asc" ? "desc" : "asc";
 
-        // Reset autres colonnes
         ths.forEach((h) => {
           if (h !== th) {
             h.dataset.sortDir = "none";
@@ -369,7 +396,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const tbody = table.querySelector("tbody");
         const rows = Array.from(tbody.querySelectorAll("tr"));
-        const type = columnTypes[colIndex] || "string"; // "string" | "number" | "date"
+        const type = columnTypes[colIndex] || "string";
 
         rows.sort((a, b) => {
           const aText = a.cells[colIndex]?.textContent.trim() || "";
@@ -397,6 +424,4 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   window.makeTableSortable = makeTableSortable;
-
-}); // fin DOMContentLoaded
-
+});
