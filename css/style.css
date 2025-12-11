@@ -652,19 +652,24 @@ input[type="date"]:focus {
 
 /* Bouton Imprimer le stock : accent bleu/orange */
 #btnPrintStock {
-  border-color: #2563eb;
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid #2563eb;
   background: linear-gradient(135deg, #2563eb, #f97316);
-  color: #050509;
-  font-weight: 600;
-  letter-spacing: 0.12em;
+  color: #f9fafb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease, filter 0.1s ease;
 }
 
 #btnPrintStock:hover:not(:disabled) {
-  background: linear-gradient(135deg, #1d4ed8, #ea580c);
-  color: #050509;
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.45);
 }
 
 #btnPrintStock:active:not(:disabled) {
   transform: translateY(0);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.9);
 }
