@@ -143,8 +143,11 @@ function closeMenu() {
 }
 
 userMenuToggle.addEventListener("click", () => {
-  if (userMenuDropdown.classList.contains("open")) openMenu();
-  else openMenu();
+  if (userMenuDropdown.classList.contains("open")) {
+    closeMenu();
+  } else {
+    openMenu();
+  }
 });
 
 document.addEventListener("click", (e) => {
@@ -376,3 +379,4 @@ function makeTableSortable(table, columnTypes) {
 }
 
 window.makeTableSortable = makeTableSortable;
+
