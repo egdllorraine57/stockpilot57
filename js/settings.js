@@ -61,15 +61,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
       userMenuDropdown.appendChild(btnUsers);
 
-      // 2. Gestion affaires
-      const btnAff = document.createElement("button");
-      btnAff.className = "user-menu-item";
-      btnAff.textContent = "Gestion affaires";
-      btnAff.addEventListener("click", () => {
-        closeMenu();
-        openAffaireModal();
-      });
-      userMenuDropdown.appendChild(btnAff);
+      // 2. Gestion affaires (Supprimer/ on passe par l'onglet affaire)
 
       // 3. Supprimer un utilisateur (Firestore)
       const btnDeleteUser = document.createElement("button");
@@ -407,3 +399,4 @@ document.addEventListener("DOMContentLoaded", () => {
   window.makeTableSortable = makeTableSortable;
 
 }); // fin DOMContentLoaded
+
