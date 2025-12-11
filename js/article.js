@@ -11,6 +11,9 @@ import {
   supprimerArticle
 } from "./articles-add.js";
 
+console.log("XLSX global = ", window.XLSX);
+console.log("type de XLSX =", typeof window.XLSX);
+
 const name = sessionStorage.getItem("userName");
 const role = sessionStorage.getItem("userRole");
 
@@ -587,3 +590,4 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
