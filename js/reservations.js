@@ -1,4 +1,5 @@
 // /js/reservations.js
+
 import {
   collection,
   getDocs,
@@ -37,6 +38,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnPanierCancel = document.getElementById("btnPanierCancel");
   const btnPanierClose = document.getElementById("panierModalClose");
 
+  // Modale sélection article
+  const articleSelectBackdrop = document.getElementById("articleSelectModalBackdrop");
+  const articleSearchInput = document.getElementById("articleSearchInput");
+  const articleResultsTable = document.getElementById("articleResultsTable");
+  const articleSelectClose = document.getElementById("articleSelectClose");
+  const articleSelectCancel = document.getElementById("articleSelectCancel");
+  let articleSelectionCallback = null;
+
   // Données
   let reservations = [];
   let affaires = [];
@@ -63,7 +72,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Gestion onglets locaux (tu peux les garder ou les laisser au script global de home.html)
   function showSection(section) {
     if (!articlesSection || !mouvementsSection || !reservationsSection || !preparationsSection) return;
-
     articlesSection.style.display = section === "articles" ? "block" : "none";
     mouvementsSection.style.display = section === "mouvements" ? "block" : "none";
     reservationsSection.style.display = section === "reservations" ? "block" : "none";
@@ -111,7 +119,6 @@ document.addEventListener("DOMContentLoaded", () => {
       articles.push({ id: docSnap.id, ...docSnap.data() });
     });
   }
-
   async function chargerReservations() {
     const snap = await getDocs(collection(db, "reservations"));
     reservations = [];
@@ -172,6 +179,7 @@ document.addEventListener("DOMContentLoaded", () => {
         renderReservations(reservations);
         return;
       }
+
       const filtered = reservations.filter(r => {
         const affaireLabel =
           r.affaireLibelle ||
@@ -186,6 +194,7 @@ document.addEventListener("DOMContentLoaded", () => {
         const haystack = `${affaireLabel} ${articleLabel} ${r.statut || ""}`.toLowerCase();
         return haystack.includes(q);
       });
+
       renderReservations(filtered);
     });
   }
@@ -205,6 +214,95 @@ document.addEventListener("DOMContentLoaded", () => {
     if (panierModalBackdrop) panierModalBackdrop.classList.remove("open");
   }
 
+  // Modale sélection article
+  function openArticleSelectModal(callback) {
+    articleSelectionCallback = callback;
+    if (articleSearchInput) {
+      articleSearchInput.value = "";
+    }
+    renderArticleSearchResults("");
+    if (articleSelectBackdrop) {
+      articleSelectBackdrop.classList.add("open");
+    }
+  }
+
+  function closeArticleSelectModal() {
+    if (articleSelectBackdrop) {
+      articleSelectBackdrop.classList.remove("open");
+    }
+    articleSelectionCallback = null;
+  }
+
+  function renderArticleSearchResults(query) {
+    if (!articleResultsTable) return;
+    const q = (query || "").trim().toLowerCase();
+
+    articleResultsTable.innerHTML = "";
+
+    if (!q) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.style.textAlign = "center";
+      td.style.padding = "16px";
+      td.textContent = "Tapez pour rechercher…";
+      tr.appendChild(td);
+      articleResultsTable.appendChild(tr);
+      return;
+    }
+
+    const matches = articles
+      .filter(a => {
+        const label = `${a.marque || ""} ${a.reference || ""} ${a.libelle || ""}`.toLowerCase();
+        return label.includes(q);
+      })
+      .slice(0, 50);
+
+    if (!matches.length) {
+      const tr = document.createElement("tr");
+      const td = document.createElement("td");
+      td.colSpan = 4;
+      td.style.textAlign = "center";
+      td.style.padding = "16px";
+      td.textContent = "Aucun article trouvé";
+      tr.appendChild(td);
+      articleResultsTable.appendChild(tr);
+      return;
+    }
+
+    matches.forEach(article => {
+      const tr = document.createElement("tr");
+      tr.style.cursor = "pointer";
+
+      const tdMarque = document.createElement("td");
+      tdMarque.textContent = article.marque || "";
+
+      const tdRef = document.createElement("td");
+      tdRef.textContent = article.reference || "";
+
+      const tdLib = document.createElement("td");
+      tdLib.textContent = article.libelle || "";
+
+      const tdCump = document.createElement("td");
+      tdCump.textContent = formatNombre(article.cump, 2);
+
+      tr.appendChild(tdMarque);
+      tr.appendChild(tdRef);
+      tr.appendChild(tdLib);
+      tr.appendChild(tdCump);
+
+      tr.addEventListener("click", () => {
+        if (articleSelectionCallback) {
+          articleSelectionCallback(article);
+        }
+        closeArticleSelectModal();
+      });
+
+      articleResultsTable.appendChild(tr);
+    });
+  }
+
+  // Listeners ouvertures/fermetures de modales
   if (btnNewReservation) {
     btnNewReservation.addEventListener("click", async () => {
       await chargerAffaires();
@@ -231,13 +329,40 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
+  // Événements modale article
+  if (articleSearchInput) {
+    articleSearchInput.addEventListener("input", (e) => {
+      renderArticleSearchResults(e.target.value);
+    });
+  }
+
+  if (articleSelectClose) {
+    articleSelectClose.addEventListener("click", () => {
+      closeArticleSelectModal();
+    });
+  }
+
+  if (articleSelectCancel) {
+    articleSelectCancel.addEventListener("click", () => {
+      closeArticleSelectModal();
+    });
+  }
+
+  if (articleSelectBackdrop) {
+    articleSelectBackdrop.addEventListener("click", (e) => {
+      if (e.target === articleSelectBackdrop) {
+        closeArticleSelectModal();
+      }
+    });
+  }
+
+  // Ajout ligne panier
   if (btnPanierAddLine) {
     btnPanierAddLine.addEventListener("click", () => {
       ajouterLignePanier();
     });
   }
 
-  // === Combobox article + ligne de panier ===
   function ajouterLignePanier() {
     if (!panierBody) return;
 
@@ -247,92 +372,25 @@ document.addEventListener("DOMContentLoaded", () => {
     const tr = document.createElement("tr");
     tr.dataset.id = idTemp;
 
-    // Colonne Article : combobox filtrable
+    // Colonne Article : libellé cliquable -> ouvre la modale
     const tdArticle = document.createElement("td");
-    const comboWrapper = document.createElement("div");
-    comboWrapper.style.position = "relative";
+    const articleDisplay = document.createElement("span");
+    articleDisplay.textContent = "Cliquez pour sélectionner";
+    articleDisplay.style.color = "#007bff";
+    articleDisplay.style.cursor = "pointer";
 
-    const inputArticle = document.createElement("input");
-    inputArticle.type = "text";
-    inputArticle.placeholder = "Rechercher un article…";
-    inputArticle.autocomplete = "off";
-    inputArticle.style.width = "100%";
-
-    const resultsBox = document.createElement("div");
-    resultsBox.style.position = "absolute";
-    resultsBox.style.left = "0";
-    resultsBox.style.right = "0";
-    resultsBox.style.top = "100%";
-    resultsBox.style.zIndex = "10";
-    resultsBox.style.maxHeight = "220px";
-    resultsBox.style.overflowY = "auto";
-    resultsBox.style.background = "#18181c";
-    resultsBox.style.border = "1px solid #2b2b33";
-    resultsBox.style.borderRadius = "8px";
-    resultsBox.style.boxShadow = "0 18px 40px rgba(0,0,0,0.7)";
-    resultsBox.style.display = "none";
-
-    function renderArticleResults(query) {
-      const q = query.trim().toLowerCase();
-      resultsBox.innerHTML = "";
-
-      if (!q) {
-        resultsBox.style.display = "none";
-        return;
-      }
-
-      const matches = articles
-        .filter(a => {
-          const label = `${a.marque || ""} ${a.reference || ""} ${a.libelle || ""}`.toLowerCase();
-          return label.includes(q);
-        })
-        .slice(0, 30);
-
-      if (!matches.length) {
-        resultsBox.style.display = "none";
-        return;
-      }
-
-      matches.forEach(a => {
-        const item = document.createElement("div");
-        item.textContent = `${a.marque || ""} - ${a.reference || ""} - ${a.libelle || ""}`;
-        item.style.padding = "6px 10px";
-        item.style.cursor = "pointer";
-        item.style.fontSize = "12px";
-
-        item.addEventListener("mouseenter", () => {
-          item.style.background = "#262635";
-        });
-        item.addEventListener("mouseleave", () => {
-          item.style.background = "transparent";
-        });
-
-        item.addEventListener("click", () => {
-          inputArticle.value = item.textContent;
-          const ligne = panierLignes.find(l => l.idTemp === idTemp);
-          if (ligne) ligne.articleId = a.id;
-          resultsBox.style.display = "none";
-        });
-
-        resultsBox.appendChild(item);
+    articleDisplay.addEventListener("click", () => {
+      openArticleSelectModal((article) => {
+        const ligne = panierLignes.find(l => l.idTemp === idTemp);
+        if (ligne) {
+          ligne.articleId = article.id;
+        }
+        articleDisplay.textContent = `${article.marque || ""} - ${article.reference || ""} - ${article.libelle || ""}`;
+        articleDisplay.style.color = "#fff";
       });
-
-      resultsBox.style.display = "block";
-    }
-
-    inputArticle.addEventListener("input", () => {
-      renderArticleResults(inputArticle.value);
     });
 
-    document.addEventListener("click", (e) => {
-      if (!comboWrapper.contains(e.target)) {
-        resultsBox.style.display = "none";
-      }
-    });
-
-    comboWrapper.appendChild(inputArticle);
-    comboWrapper.appendChild(resultsBox);
-    tdArticle.appendChild(comboWrapper);
+    tdArticle.appendChild(articleDisplay);
 
     // Colonne Quantité
     const tdQte = document.createElement("td");
@@ -362,7 +420,6 @@ document.addEventListener("DOMContentLoaded", () => {
     tr.appendChild(tdArticle);
     tr.appendChild(tdQte);
     tr.appendChild(tdActions);
-
     panierBody.appendChild(tr);
   }
 
@@ -383,7 +440,6 @@ document.addEventListener("DOMContentLoaded", () => {
   function genererBonAchatPDF(affaireLibelle, manquants) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
-
     const titre = "Bon d'achat - Articles manquants";
     doc.setFontSize(14);
     doc.text(titre, 10, 10);
@@ -431,9 +487,10 @@ document.addEventListener("DOMContentLoaded", () => {
       const affaireObj = affaires.find(a => a.id === affaireId);
       const codeAffaire = affaireObj?.code || "";
       const libAffaire = affaireObj?.libelle || "";
-      const affaireLibelle = codeAffaire && libAffaire
-        ? `${codeAffaire} - ${libAffaire}`
-        : (codeAffaire || libAffaire || affaireId);
+      const affaireLibelle =
+        codeAffaire && libAffaire
+          ? `${codeAffaire} - ${libAffaire}`
+          : (codeAffaire || libAffaire || affaireId);
 
       if (!inputDateDispo || !inputDateDispo.value) {
         alert("Saisir une date de mise à disposition.");
@@ -448,7 +505,6 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       const userName = sessionStorage.getItem("userName") || "";
-
       statsParArticle = window.statsParArticleGlobal || {};
       const manquants = [];
 
@@ -460,8 +516,8 @@ document.addEventListener("DOMContentLoaded", () => {
         const stockPhysique = Number(stats.stock) || 0;
         const reserveExistante = await chargerReservationsPourCalcul(ligne.articleId);
         const stockDisponible = stockPhysique - reserveExistante;
-        const qDemandee = Number(ligne.quantite) || 0;
 
+        const qDemandee = Number(ligne.quantite) || 0;
         let qReserve = 0;
         let qManquante = 0;
 
@@ -538,7 +594,6 @@ document.addEventListener("DOMContentLoaded", () => {
   // Initialisation + tri
   (async function initReservations() {
     await chargerReservations();
-
     const tableRes = document.getElementById("reservationsTable");
     if (tableRes && window.makeTableSortable) {
       window.makeTableSortable(tableRes, [
@@ -547,3 +602,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 }); // fin DOMContentLoaded
+
+
