@@ -18,8 +18,6 @@ const role = sessionStorage.getItem("userRole") || "defaut";
 const name = sessionStorage.getItem("userName") || "";
 const currentUserEmail = sessionStorage.getItem("userEmail") || "";
 
-const tabAffaires = document.getElementById("tab-affaires");
-const affairesSection = document.getElementById("affairesSection");
 const searchInput = document.getElementById("affairesSearchInput");
 const affairesBody = document.getElementById("affairesBody");
 
@@ -28,42 +26,6 @@ const affairesRef = collection(db, "affaires");
 
 // État local
 let affaires = [];
-
-// --- Gestion affichage onglets ---
-
-function activateTab(tabId, sectionId) {
-  const tabs = [
-    "tab-articles",
-    "tab-mouvements",
-    "tab-reservations",
-    "tab-preparations",
-    "tab-affaires"
-  ];
-  const sections = [
-    "articlesSection",
-    "mouvementsSection",
-    "reservationsSection",
-    "preparationsSection",
-    "affairesSection"
-  ];
-
-  tabs.forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.classList.toggle("active", id === tabId);
-  });
-
-  sections.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) el.style.display = id === sectionId ? "block" : "none";
-  });
-}
-
-if (tabAffaires) {
-  tabAffaires.addEventListener("click", () => {
-    activateTab("tab-affaires", "affairesSection");
-    chargerAffaires();
-  });
-}
 
 // --- Chargement et affichage des affaires ---
 
