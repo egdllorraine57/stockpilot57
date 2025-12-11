@@ -554,3 +554,63 @@ td.libelle {
 .user-menu-item:hover {
   background: rgba(37, 99, 235, 0.25);
 }
+/* ========================= */
+/* = Inputs date + boutons = */
+/* ========================= */
+
+/* Groupe date dans Préparations */
+#preparationsSection label {
+  font-size: 0.8rem;
+  color: #e5e7eb;
+  margin-right: 4px;
+}
+
+#preparationsSection input[type="date"] {
+  padding: 6px 9px;
+  border-radius: 999px;
+  border: 1px solid #4b5563;
+  background: rgba(15, 23, 42, 0.95);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  outline: none;
+  margin-right: 6px;
+  min-width: 135px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease, transform 0.08s ease;
+}
+
+/* Couleur du texte dans les sélecteurs natifs */
+#preparationsSection input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.8);
+}
+
+#preparationsSection input[type="date"]:focus {
+  border-color: #2563eb;
+  background: rgba(15, 23, 42, 1);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
+  transform: translateY(-1px);
+}
+
+/* Bouton Filtrer aligné au style des autres boutons d’actions */
+#btnPrepFiltrer {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid #2563eb;
+  background: linear-gradient(135deg, #2563eb, #f97316);
+  color: #f9fafb;
+  font-size: 0.8rem;
+  cursor: pointer;
+  margin-left: 4px;
+  transition: background 0.15s ease, box-shadow 0.15s ease, transform 0.08s ease, filter 0.1s ease;
+}
+
+#btnPrepFiltrer:hover {
+  filter: brightness(1.05);
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(37, 99, 235, 0.45);
+}
+
+#btnPrepFiltrer:active {
+  transform: translateY(0);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.9);
+}
+
