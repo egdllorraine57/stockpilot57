@@ -431,53 +431,85 @@
   </div>
 
   <!-- Modale Panier / Réservation -->
-  <div class="modal-backdrop" id="panierModalBackdrop">
-    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="panierModalTitle">
-      <div class="modal-header">
-        <h2 id="panierModalTitle">Nouvelle réservation</h2>
-        <button class="modal-close" id="panierModalClose" aria-label="Fermer">×</button>
+<div class="modal-backdrop" id="panierModalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="panierModalTitle">
+    <div class="modal-header">
+      <h2 id="panierModalTitle">Nouvelle réservation</h2>
+      <button class="modal-close" id="panierModalClose" aria-label="Fermer">×</button>
+    </div>
+
+    <form id="panierForm">
+      <div class="modal-body">
+        <div class="modal-grid">
+          <div class="full">
+            <label for="p_affaire">Affaire</label>
+            <select id="p_affaire" required></select>
+          </div>
+          <div class="full">
+            <label for="p_date">Date mise à disposition</label>
+            <input type="date" id="p_date" required>
+          </div>
+        </div>
+
+        <div style="margin-top:16px;">
+          <button type="button" id="btnPanierAddLine">Ajouter un article</button>
+        </div>
+
+        <div class="inventory-table-wrapper" style="margin-top:8px;">
+          <table id="panierTable">
+            <thead>
+              <tr>
+                <th>Article</th>
+                <th>Quantité</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="panierBody">
+              <!-- lignes panier -->
+            </tbody>
+          </table>
+        </div>
       </div>
 
-      <form id="panierForm">
-        <div class="modal-body">
-          <div class="modal-grid">
-            <div class="full">
-              <label for="p_affaire">Affaire</label>
-              <select id="p_affaire" required></select>
-            </div>
-            <div class="full">
-              <label for="p_date">Date mise à disposition</label>
-              <input type="date" id="p_date" required>
-            </div>
-          </div>
+      <div class="modal-footer">
+        <button id="btnPanierCancel" type="button">Annuler</button>
+        <button class="primary" id="btnPanierValidate" type="submit">Valider le panier</button>
+      </div>
+    </form>
+  </div>
+</div>
 
-          <div style="margin-top:16px;">
-            <button type="button" id="btnPanierAddLine">Ajouter un article</button>
-          </div>
+<!-- Modale sélection article -->
+<div class="modal-backdrop" id="articleSelectModalBackdrop">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="articleSelectTitle">
+    <div class="modal-header">
+      <h3 id="articleSelectTitle">Rechercher un article</h3>
+      <button class="modal-close" id="articleSelectClose" aria-label="Fermer">×</button>
+    </div>
 
-          <div class="inventory-table-wrapper" style="margin-top:8px;">
-            <table id="panierTable">
-              <thead>
-                <tr>
-                  <th>Article</th>
-                  <th>Quantité</th>
-                  <th></th>
-                </tr>
-              </thead>
-              <tbody id="panierBody">
-                <!-- lignes panier -->
-              </tbody>
-            </table>
-          </div>
-        </div>
+    <div class="modal-body">
+      <input
+        id="articleSearchInput"
+        type="text"
+        placeholder="Rechercher (marque, référence, libellé)"
+        style="width:100%; padding:8px; margin-bottom:10px;"
+      >
 
-        <div class="modal-footer">
-          <button id="btnPanierCancel" type="button">Annuler</button>
-          <button class="primary" id="btnPanierValidate" type="submit">Valider le panier</button>
-        </div>
-      </form>
+      <div style="max-height:300px; overflow:auto;">
+        <table id="articleResultsTable">
+          <tbody>
+            <!-- lignes résultats recherche articles -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="secondary" id="articleSelectCancel" type="button">Annuler</button>
     </div>
   </div>
+</div>
+
   
   <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
   <script type="module" src="js/firebase-config.js"></script>
@@ -548,6 +580,7 @@
 
 </body>
 </html>
+
 
 
 
