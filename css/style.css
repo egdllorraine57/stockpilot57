@@ -9,7 +9,8 @@
 /* -------- Background global -------- */
 body {
   min-height: 100vh;
-  background: radial-gradient(circle at top, #020617 0%, #020308 55%, #000000 100%);
+  /* Bleu sombre mais moins noir */
+  background: radial-gradient(circle at top, #0b1120 0%, #020617 55%, #020617 100%);
   color: #e5e7eb;
 }
 
@@ -22,17 +23,18 @@ body {
   max-width: 420px;
   padding: 32px 28px;
   margin: 0 auto;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.92);
+  border-radius: 18px;
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.9));
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.85),
-    0 0 0 1px rgba(148, 163, 184, 0.15);
-  backdrop-filter: blur(16px);
+    0 18px 45px rgba(15, 23, 42, 0.85),
+    0 0 0 1px rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(18px);
   margin-top: 8vh;
+  border: 1px solid rgba(37, 99, 235, 0.4);
 }
 
 .login-wrapper h1 {
-  font-size: 1.5rem;
+  font-size: 1.6rem;
   font-weight: 600;
   margin-bottom: 4px;
 }
@@ -61,12 +63,12 @@ input[type="password"] {
   width: 100%;
   padding: 10px 12px;
   border-radius: 10px;
-  border: 1px solid #374151;
-  background: rgba(15, 23, 42, 0.9);
+  border: 1px solid #4b5563;
+  background: rgba(15, 23, 42, 0.95);
   color: #e5e7eb;
   font-size: 0.95rem;
   outline: none;
-  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, transform 0.08s ease;
 }
 
 input::placeholder {
@@ -74,9 +76,12 @@ input::placeholder {
 }
 
 input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.55);
+  border-color: #2563eb;
+  box-shadow:
+    0 0 0 1px rgba(37, 99, 235, 0.5),
+    0 0 0 6px rgba(37, 99, 235, 0.12);
   background: rgba(15, 23, 42, 1);
+  transform: translateY(-1px);
 }
 
 button[type="submit"] {
@@ -85,7 +90,7 @@ button[type="submit"] {
   padding: 11px 14px;
   border-radius: 999px;
   border: none;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  background: linear-gradient(135deg, #2563eb, #f97316);
   color: #f9fafb;
   font-weight: 600;
   font-size: 0.95rem;
@@ -95,7 +100,7 @@ button[type="submit"] {
   justify-content: center;
   gap: 6px;
   box-shadow:
-    0 12px 30px rgba(79, 70, 229, 0.55),
+    0 12px 30px rgba(37, 99, 235, 0.55),
     0 0 0 1px rgba(15, 23, 42, 1);
   transition: transform 0.12s ease-out, box-shadow 0.12s ease-out, filter 0.12s ease-out;
 }
@@ -104,14 +109,14 @@ button[type="submit"]:hover {
   transform: translateY(-1px);
   filter: brightness(1.05);
   box-shadow:
-    0 18px 40px rgba(79, 70, 229, 0.65),
+    0 18px 40px rgba(37, 99, 235, 0.65),
     0 0 0 1px rgba(15, 23, 42, 1);
 }
 
 button[type="submit"]:active {
   transform: translateY(0);
   box-shadow:
-    0 8px 20px rgba(79, 70, 229, 0.4),
+    0 8px 18px rgba(37, 99, 235, 0.45),
     0 0 0 1px rgba(15, 23, 42, 1);
 }
 
@@ -124,7 +129,7 @@ button[type="submit"]:active {
 .login-footer {
   margin-top: 18px;
   font-size: 0.8rem;
-  color: #6b7280;
+  color: #9ca3af;
   text-align: center;
 }
 
@@ -151,9 +156,9 @@ button[type="submit"]:active {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  background: rgba(15, 23, 42, 0.96);
-  border-bottom: 1px solid rgba(55, 65, 81, 0.8);
-  backdrop-filter: blur(16px);
+  background: linear-gradient(135deg, rgba(15, 23, 42, 0.96), rgba(15, 23, 42, 0.94));
+  border-bottom: 1px solid rgba(37, 99, 235, 0.35);
+  backdrop-filter: blur(18px);
 }
 
 .header-left h1 {
@@ -180,24 +185,31 @@ button[type="submit"]:active {
 }
 
 .tab {
-  padding: 4px 10px;
+  padding: 5px 12px;
   border-radius: 999px;
   font-size: 0.75rem;
   border: 1px solid transparent;
-  color: #9ca3af;
+  color: #d1d5db;
   cursor: pointer;
-  background: transparent;
+  background: rgba(15, 23, 42, 0.9);
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease, transform 0.08s ease;
+}
+
+.tab:hover {
+  border-color: rgba(37, 99, 235, 0.5);
+  background: rgba(15, 23, 42, 0.98);
+  transform: translateY(-1px);
 }
 
 .tab.active {
-  border-color: #6366f1;
-  background: rgba(79, 70, 229, 0.28);
-  color: #e5e7eb;
+  border-color: #2563eb;
+  background: linear-gradient(135deg, rgba(37, 99, 235, 0.25), rgba(249, 115, 22, 0.15));
+  color: #f9fafb;
 }
 
 /* Layout contenu */
 main {
-  padding: 20px 24px;
+  padding: 20px 24px 32px 24px;
 }
 
 /* Toolbar */
@@ -219,11 +231,12 @@ main {
   width: 100%;
   padding: 8px 11px;
   border-radius: 999px;
-  border: 1px solid #374151;
+  border: 1px solid #4b5563;
   background: rgba(15, 23, 42, 0.95);
   color: #e5e7eb;
   font-size: 0.9rem;
   outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, background 0.15s ease;
 }
 
 .search-box input::placeholder {
@@ -231,8 +244,9 @@ main {
 }
 
 .search-box input:focus {
-  border-color: #6366f1;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.5);
+  background: rgba(15, 23, 42, 1);
 }
 
 /* Actions (CRUD) */
@@ -245,10 +259,17 @@ main {
   padding: 7px 12px;
   border-radius: 999px;
   border: 1px solid #4b5563;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.97);
   color: #e5e7eb;
   font-size: 0.8rem;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease, color 0.15s ease;
+}
+
+.actions button:hover:not(:disabled) {
+  background: rgba(30, 64, 175, 0.9);
+  border-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .actions button:disabled {
@@ -256,12 +277,14 @@ main {
   cursor: default;
 }
 
-.actions #btnAdd {
+.actions #btnAdd,
+.actions #btnAffAdd {
   border-color: #22c55e;
   color: #bbf7d0;
 }
 
-.actions #btnDelete {
+.actions #btnDelete,
+.actions #btnAffDelete {
   border-color: #f97373;
   color: #fecaca;
 }
@@ -270,9 +293,9 @@ main {
 .inventory-table-wrapper {
   border-radius: 14px;
   overflow: hidden;
-  border: 1px solid rgba(55, 65, 81, 0.9);
-  background: rgba(15, 23, 42, 0.98);
-  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(55, 65, 81, 0.8);
+  background: radial-gradient(circle at top left, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.94));
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.9);
 }
 
 table {
@@ -282,7 +305,7 @@ table {
 }
 
 thead {
-  background: #020617;
+  background: linear-gradient(90deg, #0b1120, #020617);
 }
 
 thead th {
@@ -300,15 +323,15 @@ tbody tr:nth-child(even) {
 }
 
 tbody tr:nth-child(odd) {
-  background: rgba(15, 23, 42, 0.92);
+  background: rgba(15, 23, 42, 0.94);
 }
 
 tbody tr:hover {
-  background: rgba(30, 64, 175, 0.35);
+  background: rgba(37, 99, 235, 0.24);
 }
 
 .inventory-table-wrapper tr.selected {
-  background: rgba(59, 130, 246, 0.5);
+  background: rgba(37, 99, 235, 0.45);
 }
 
 td {
@@ -329,8 +352,8 @@ td.libelle {
   padding: 2px 8px;
   border-radius: 999px;
   font-size: 0.7rem;
-  background: rgba(55, 65, 81, 0.85);
-  color: #e5e7eb;
+  background: rgba(37, 99, 235, 0.3);
+  color: #dbeafe;
   text-transform: uppercase;
 }
 
@@ -339,17 +362,13 @@ td.libelle {
   padding: 3px 9px;
   border-radius: 999px;
   font-size: 0.7rem;
-  background: rgba(59, 130, 246, 0.2);
-  color: #93c5fd;
+  background: rgba(249, 115, 22, 0.2);
+  color: #fed7aa;
 }
 
 .location {
   font-size: 0.78rem;
   color: #9ca3af;
-}
-
-.location span {
-  margin-right: 6px;
 }
 
 /* ===================================== */
@@ -359,8 +378,8 @@ td.libelle {
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.8);
-  backdrop-filter: blur(6px);
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(10px);
   display: none;
   align-items: center;
   justify-content: center;
@@ -373,12 +392,12 @@ td.libelle {
 
 .modal {
   width: 100%;
-  max-width: 480px;
-  border-radius: 16px;
-  background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(55, 65, 81, 0.9);
+  max-width: 520px;
+  border-radius: 18px;
+  background: radial-gradient(circle at top, rgba(15, 23, 42, 0.98), rgba(15, 23, 42, 0.95));
+  border: 1px solid rgba(37, 99, 235, 0.5);
   box-shadow:
-    0 24px 60px rgba(0, 0, 0, 0.9),
+    0 24px 60px rgba(15, 23, 42, 0.9),
     0 0 0 1px rgba(15, 23, 42, 1);
   padding: 18px 20px 16px 20px;
 }
@@ -400,6 +419,10 @@ td.libelle {
   color: #9ca3af;
   font-size: 1.2rem;
   cursor: pointer;
+}
+
+.modal-close::before {
+  content: "✕";
 }
 
 .modal-body {
@@ -430,17 +453,17 @@ td.libelle {
   width: 100%;
   padding: 7px 9px;
   border-radius: 9px;
-  border: 1px solid #374151;
-  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid #4b5563;
+  background: rgba(15, 23, 42, 0.97);
   color: #e5e7eb;
   font-size: 0.85rem;
 }
 
 .modal input:focus,
 .modal select:focus {
-  border-color: #6366f1;
+  border-color: #2563eb;
   outline: none;
-  box-shadow: 0 0 0 1px rgba(99, 102, 241, 0.5);
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.55);
 }
 
 .modal-footer {
@@ -453,15 +476,15 @@ td.libelle {
   padding: 7px 12px;
   border-radius: 999px;
   border: 1px solid #4b5563;
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.96);
   color: #e5e7eb;
   font-size: 0.8rem;
   cursor: pointer;
 }
 
 .modal-footer .primary {
-  border-color: #6366f1;
-  background: linear-gradient(135deg, #6366f1, #a855f7);
+  border-color: #2563eb;
+  background: linear-gradient(135deg, #2563eb, #f97316);
 }
 
 /* ===== Menu utilisateur (dropdown) ===== */
@@ -478,10 +501,17 @@ td.libelle {
   padding: 6px 10px;
   border-radius: 999px;
   border: 1px solid rgba(75, 85, 99, 0.9);
-  background: rgba(15, 23, 42, 0.95);
+  background: rgba(15, 23, 42, 0.96);
   color: #e5e7eb;
   font-size: 0.8rem;
   cursor: pointer;
+  transition: background 0.15s ease, border-color 0.15s ease, transform 0.08s ease;
+}
+
+.user-menu-toggle:hover {
+  background: rgba(15, 23, 42, 1);
+  border-color: #2563eb;
+  transform: translateY(-1px);
 }
 
 .user-menu-toggle span.role {
@@ -499,8 +529,8 @@ td.libelle {
   min-width: 220px;
   border-radius: 12px;
   background: rgba(15, 23, 42, 0.98);
-  border: 1px solid rgba(55, 65, 81, 0.9);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.9);
+  border: 1px solid rgba(37, 99, 235, 0.6);
+  box-shadow: 0 18px 40px rgba(15, 23, 42, 0.95);
   padding: 6px 0;
   display: none;
   z-index: 40;
@@ -522,5 +552,5 @@ td.libelle {
 }
 
 .user-menu-item:hover {
-  background: rgba(55, 65, 81, 0.85);
+  background: rgba(37, 99, 235, 0.25);
 }
