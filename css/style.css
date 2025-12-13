@@ -472,3 +472,56 @@ td {
   margin-left: 0;
 }
 
+/* ===================================================== */
+/* ======= STYLE BOUTONS MODALES (AJOUT / ANNULER) ===== */
+/* ===================================================== */
+
+/* Base commune à tous les boutons de modale */
+.modal-footer button {
+  padding: 7px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(100, 116, 139, 0.9);
+  background: rgba(15, 23, 42, 0.96);
+  color: #e5e7eb;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    border-color 0.15s ease,
+    transform 0.08s ease,
+    box-shadow 0.15s ease;
+}
+
+/* Hover générique */
+.modal-footer button:hover {
+  background: rgba(30, 64, 175, 0.9);
+  border-color: #3b82f6;
+  transform: translateY(-1px);
+  box-shadow: 0 8px 20px rgba(59, 130, 246, 0.35);
+}
+
+/* Bouton primaire (ex : Ajouter un article) */
+.modal-footer .primary {
+  background: linear-gradient(135deg, #3b82f6, #fb923c);
+  border-color: #3b82f6;
+  color: #f9fafb;
+  box-shadow: 0 10px 26px rgba(59, 130, 246, 0.55);
+}
+
+.modal-footer .primary:hover {
+  background: linear-gradient(135deg, #2563eb, #f97316);
+}
+
+/* Bouton Annuler */
+.modal-footer .secondary {
+  color: #cbd5f5;
+  border-color: rgba(148, 163, 184, 0.8);
+}
+
+.modal-footer .secondary:hover {
+  background: rgba(71, 85, 105, 0.9);
+  border-color: #cbd5f5;
+  box-shadow: 0 6px 16px rgba(148, 163, 184, 0.25);
+}
+
