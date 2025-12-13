@@ -442,3 +442,33 @@ td {
 #btnPrepFiltrer {
   margin-left: 8px;
 }
+/* ===================================================== */
+/* ===== FIX POSITION TOOLBAR : ACTIONS A DROITE ======= */
+/* ===================================================== */
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* La recherche prend l'espace disponible à gauche */
+.search-box {
+  flex: 1 1 auto;
+  min-width: 220px;
+}
+
+/* Les actions sont poussées complètement à droite */
+.actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* Boutons utilitaires restent collés au groupe actions */
+#btnPrintStock,
+#btnPrepFiltrer {
+  margin-left: 0;
+}
+
