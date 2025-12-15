@@ -156,7 +156,7 @@ async function chargerDonnees() {
   reservationsActives = [];
   snapRes.forEach(doc => {
     const r = doc.data();
-    if (r.articleId && (r.statut === "en_cours" || r.statut === "valide")) {
+    if (r.articleId && r.statut === "en_cours") {
       reservationsActives.push({ id: doc.id, ...r });
     }
   });
@@ -590,4 +590,5 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
 
