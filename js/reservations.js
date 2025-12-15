@@ -135,14 +135,16 @@ document.addEventListener("DOMContentLoaded", () => {
     renderReservations(reservations);
   }
 
-  // ✅ NOUVELLE FONCTION : Rendu tableau avec colonne Actions
+  // ✅ RENDU TABLEAU CORRIGÉ - TOUS LES STATUTS VISIBLES
   function renderReservations(data) {
     if (!reservBody) return;
     reservBody.innerHTML = "";
     data.forEach((r) => {
       const tr = document.createElement("tr");
-      const affaireLabel = `${r.codeAffaire || ''} ${r.affaireLibelle || ''}`.trim();
-      const articleLabel = `${r.marque || ''} ${r.reference || ''} ${r.libelle || ''}`.trim();
+      // ✅ Fallback robuste pour afficher TOUS les statuts
+      const affaireLabel = r.affaireLibelle || r.codeAffaire || r.affaireId || "";
+      const articleLabel = `${r.marque || ''} ${r.reference || ''} ${r.libelle || ''}`.trim() || 
+                          r.articleLabel || r.articleId || "";
 
       const tdAffaire = document.createElement("td");
       tdAffaire.textContent = affaireLabel;
@@ -157,22 +159,31 @@ document.addEventListener("DOMContentLoaded", () => {
       tdDate.textContent = formatDateFR(r.dateDisponibilite || r.dateMiseADisposition);
 
       const tdStatut = document.createElement("td");
-      tdStatut.textContent = r.statut || "";
+      tdStatut.textContent = r.statut || "N/A";
       tdStatut.style.fontWeight = "bold";
-      tdStatut.style.color = r.statut === "brouillon" ? "#fbbf24" :
-                            r.statut === "valide" ? "#10b981" : "#ef4444";
+      
+      // ✅ COULEURS POUR TOUS LES STATUTS
+      switch(r.statut) {
+        case "brouillon":
+          tdStatut.style.color = "#fbbf24"; // Jaune
+          break;
+        case "en_cours":
+        case "valide":
+          tdStatut.style.color = "#10b981"; // Vert
+          break;
+        default:
+          tdStatut.style.color = "#ef4444"; // Rouge
+      }
 
-      // ✅ COLONNE ACTIONS
+      // ✅ COLONNE ACTIONS (brouillon uniquement)
       const tdActions = document.createElement("td");
       if (r.statut === "brouillon" && r.createdBy === currentUserEmail) {
         const btnEdit = document.createElement("button");
         btnEdit.textContent = "✏️ Modifier";
-        btnEdit.className = "btn-secondary btn-add";
+        btnEdit.className = "btn-secondary";
         btnEdit.style.fontSize = "0.75rem";
         btnEdit.style.padding = "4px 8px";
-        btnEdit.addEventListener("click", () => {
-          openPanierModal(r.id, true);
-        });
+        btnEdit.addEventListener("click", () => openPanierModal(r.id, true));
         tdActions.appendChild(btnEdit);
       }
 
@@ -195,8 +206,8 @@ document.addEventListener("DOMContentLoaded", () => {
         return;
       }
       const filtered = reservations.filter((r) => {
-        const affaireLabel = `${r.codeAffaire || ''} ${r.affaireLibelle || ''}`.trim();
-        const articleLabel = `${r.marque || ''} ${r.reference || ''} ${r.libelle || ''}`.trim();
+        const affaireLabel = r.affaireLibelle || r.codeAffaire || r.affaireId || "";
+        const articleLabel = `${r.marque || ''} ${r.reference || ''} ${r.libelle || ''}`.trim() || r.articleLabel || r.articleId || "";
         const haystack = `${affaireLabel} ${articleLabel} ${r.statut || ""}`.toLowerCase();
         return haystack.includes(q);
       });
@@ -204,7 +215,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ✅ NOUVELLE FONCTION : Sauvegarder brouillon
+  // ✅ SAVE DRAFT CORRIGÉ - NE FERME PAS LA MODALE
   async function saveDraft() {
     if (!panierLignes.length || draftReservationId) {
       alert("Panier vide ou brouillon déjà sauvegardé.");
@@ -229,14 +240,14 @@ document.addEventListener("DOMContentLoaded", () => {
       draftReservationId = docRef.id;
       panierTitle.textContent = `Brouillon (${docRef.id.slice(-6)}) 💾`;
       alert("✅ Brouillon sauvegardé !");
-      await chargerReservations();
+      await chargerReservations(); // Recharge tableau SANS fermer
     } catch (error) {
       console.error("Erreur sauvegarde brouillon:", error);
       alert("❌ Erreur lors de la sauvegarde.");
     }
   }
 
-  // ✅ FONCTION MODIFIÉE : openPanierModal avec paramètre brouillon
+  // ✅ OPEN PANIER MODAL MODIFIÉ
   function openPanierModal(reservationId = null, isDraft = false) {
     if (!panierModalBackdrop || !panierForm || !panierTitle || !inputDateDispo || !panierBody) return;
 
@@ -257,7 +268,7 @@ document.addEventListener("DOMContentLoaded", () => {
     panierModalBackdrop.classList.add("open");
   }
 
-  // ✅ NOUVELLE FONCTION : Charger brouillon
+  // ✅ CHARGER BROUILLON
   async function chargerBrouillon(reservationId) {
     try {
       const docSnap = await getDoc(doc(db, "reservations", reservationId));
@@ -288,7 +299,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  // Panier (modale)
+  // ✅ CLOSE MODAL CORRIGÉ - Reset brouillon
   function closePanierModal() {
     if (panierModalBackdrop) panierModalBackdrop.classList.remove("open");
     draftReservationId = null;
@@ -377,7 +388,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // ✅ FONCTION AJOUTÉE : ajouterLignePanier avec données pré-remplies (pour brouillon)
+  // ✅ AJOUTER LIGNE AVEC DONNÉES (pour brouillon)
   function ajouterLignePanierAvecDonnees(idTemp, articleId = "", quantite = 0) {
     if (!panierBody) return;
 
@@ -443,7 +454,7 @@ document.addEventListener("DOMContentLoaded", () => {
     panierBody.appendChild(tr);
   }
 
-  // Ajout ligne panier (version originale)
+  // Ajout ligne panier (version standard)
   function ajouterLignePanier() {
     const idTemp = crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
     panierLignes.push({ idTemp, articleId: "", quantite: 0 });
@@ -463,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
     return totalRes;
   }
 
-  // PDF bons d'achat (jsPDF)
+  // PDF bons d'achat
   function genererBonAchatPDF(affaireLibelle, manquants) {
     const { jsPDF } = window.jspdf;
     const doc = new jsPDF();
@@ -497,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
     doc.save(nomFichier || "bon_achat.pdf");
   }
 
-  // ✅ VALIDATION MODIFIÉE : Gestion brouillon + validation complète
+  // ✅ VALIDATION COMPLÈTE - Gestion brouillon + validation stock
   if (panierForm) {
     panierForm.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -530,7 +541,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const userName = sessionStorage.getItem("userName") || "";
 
-      // ✅ GESTION BROUILLON
+      // ✅ SI BROUILLON : mise à jour uniquement
       if (draftReservationId) {
         try {
           await updateDoc(doc(db, "reservations", draftReservationId), {
@@ -554,7 +565,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // LOGIQUE VALIDATION COMPLÈTE (stock, etc.)
+      // ✅ VALIDATION COMPLÈTE (contrôles stock)
       statsParArticle = window.statsParArticleGlobal || {};
       const manquants = [];
 
@@ -581,7 +592,6 @@ document.addEventListener("DOMContentLoaded", () => {
           qManquante = qDemandee;
         }
 
-        // réservation pour la partie disponible
         if (qReserve > 0) {
           await addDoc(collection(db, "reservations"), {
             affaireId,
@@ -604,7 +614,6 @@ document.addEventListener("DOMContentLoaded", () => {
           });
         }
 
-        // partie manquante pour bon d'achat
         if (qManquante > 0) {
           manquants.push({
             marque: article.marque || "",
@@ -616,17 +625,13 @@ document.addEventListener("DOMContentLoaded", () => {
         }
       }
 
-      // recharger réservations
       await chargerReservations();
-      // recharger articles (stock et stock dispo)
       if (window.rechargerArticlesDepuisReservations) {
         await window.rechargerArticlesDepuisReservations();
       }
-      // recharger préparations (J+1)
       if (window.rechargerPreparationsDepuisArticles) {
         await window.rechargerPreparationsDepuisArticles();
       }
-      // générer bon d'achat si manquants
       if (manquants.length > 0) {
         genererBonAchatPDF(affaireLibelle, manquants);
       }
@@ -637,7 +642,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Listeners ouvertures/fermetures de modales
+  // Listeners
   if (btnNewReservation) {
     btnNewReservation.addEventListener("click", async () => {
       await chargerAffaires();
@@ -647,15 +652,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (btnPanierCancel) {
-    btnPanierCancel.addEventListener("click", () => {
-      closePanierModal();
-    });
+    btnPanierCancel.addEventListener("click", closePanierModal);
   }
 
   if (btnPanierClose) {
-    btnPanierClose.addEventListener("click", () => {
-      closePanierModal();
-    });
+    btnPanierClose.addEventListener("click", closePanierModal);
   }
 
   if (panierModalBackdrop) {
@@ -669,7 +670,6 @@ document.addEventListener("DOMContentLoaded", () => {
     btnSaveDraft.addEventListener("click", saveDraft);
   }
 
-  // Événements modale article
   if (articleSearchInput) {
     articleSearchInput.addEventListener("input", (e) => {
       renderArticleSearchResults(e.target.value);
@@ -677,15 +677,11 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   if (articleSelectClose) {
-    articleSelectClose.addEventListener("click", () => {
-      closeArticleSelectModal();
-    });
+    articleSelectClose.addEventListener("click", closeArticleSelectModal);
   }
 
   if (articleSelectCancel) {
-    articleSelectCancel.addEventListener("click", () => {
-      closeArticleSelectModal();
-    });
+    articleSelectCancel.addEventListener("click", closeArticleSelectModal);
   }
 
   if (articleSelectBackdrop) {
@@ -696,21 +692,18 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   }
 
-  // Ajout ligne panier
   if (btnPanierAddLine) {
-    btnPanierAddLine.addEventListener("click", () => {
-      ajouterLignePanier();
-    });
+    btnPanierAddLine.addEventListener("click", ajouterLignePanier);
   }
 
-  // Initialisation + tri
+  // Initialisation
   (async function initReservations() {
     await chargerReservations();
     const tableRes = document.getElementById("reservationsTable");
     if (tableRes && window.makeTableSortable) {
       window.makeTableSortable(tableRes, [
-        "string", "string", "number", "date", "string", "string" // ✅ + colonne actions
+        "string", "string", "number", "date", "string", "string"
       ]);
     }
   })();
-}); // fin DOMContentLoaded
+});
