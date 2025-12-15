@@ -424,105 +424,116 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
 
-  /* =========================
-     VALIDER RÉSERVATION ✅
-  ========================= */
-  async function validerReservation() {
-    if (!panierLignes.some(l => l.articleId && l.quantite > 0)) {
-      alert("Panier vide.");
-      return;
-    }
-
-    // Supprimer brouillon si existe
-    if (draftReservationGroupId) {
-      const q = query(
-        collection(db, "reservations"),
-        where("reservationGroupId", "==", draftReservationGroupId),
-        where("statut", "==", "brouillon")
-      );
-      const snap = await getDocs(q);
-      const batch = writeBatch(db);
-      snap.forEach(d => batch.delete(d.ref));
-      await batch.commit();
-    }
-
-    const affaire = affaires.find(a => a.id === selectAffaire.value);
-    if (!affaire) return alert("Sélectionnez une affaire.");
-    
-    const dateDispo = new Date(inputDateDispo.value);
-    const manquants = [];
-
-    for (const ligne of panierLignes) {
-      if (!ligne.articleId || ligne.quantite <= 0) continue;
-      
-      const article = articles.find(a => a.id === ligne.articleId);
-      if (!article) continue;
-      
-      const stats = statsParArticle[ligne.articleId] || { stock: 0, cump: 0 };
-      
-      // Calcul stock disponible (en_cours + valide uniquement)
-      const reserveExistante = reservations
-        .filter(r => r.articleId === ligne.articleId && 
-                    (r.statut === "en_cours" || r.statut === "valide"))
-        .reduce((sum, r) => sum + (r.quantite || 0), 0);
-      
-      const stockDispo = (stats.stock || 0) - reserveExistante;
-      const qteDemande = ligne.quantite;
-      const qteReserve = Math.min(stockDispo, qteDemande);
-      const qteManquante = qteDemande - qteReserve;
-
-      // Créer réservation (partie disponible)
-      if (qteReserve > 0) {
-        await addDoc(collection(db, "reservations"), {
-          affaireId: selectAffaire.value,
-          codeAffaire: affaire.code || "",
-          affaireLibelle: `${affaire.code || ""} - ${affaire.libelle || ""}`.trim(),
-          articleId: ligne.articleId,
-          marque: article.marque || "",
-          reference: article.reference || "",
-          libelle: article.libelle || "",
-          articleLabel: `${article.marque || ""} ${article.reference || ""} ${article.libelle || ""}`.trim(),
-          articleAllee: article.allee || "",
-          articlePlace: article.place || "",
-          articleNiveau: article.niveau || "",
-          quantite: qteReserve,
-          dateDisponibilite: dateDispo,
-          statut: "en_cours",
-          prixUnitaire: stats.cump || 0,
-          createdBy: currentUserName,
-          createdAt: serverTimestamp()
-        });
-      }
-
-      // Bon d'achat si manquant
-      if (qteManquante > 0) {
-        manquants.push({
-          marque: article.marque || "",
-          reference: article.reference || "",
-          libelle: article.libelle || "",
-          cump: stats.cump || 0,
-          qteManquante
-        });
-      }
-    }
-
-    // Finalisation
-    await chargerReservations();
-    if (window.rechargerArticlesDepuisReservations) 
-      window.rechargerArticlesDepuisReservations();
-    if (window.rechargerPreparationsDepuisArticles) 
-      window.rechargerPreparationsDepuisArticles();
-    
-    if (manquants.length > 0) {
-      genererBonAchatPDF(`${affaire.code || ""} - ${affaire.libelle || ""}`, manquants);
-    }
-
-    draftReservationGroupId = null;
-    panierLignes = [];
-    panierBody.innerHTML = "";
-    closePanierModal();
-    alert("✅ Réservation validée !");
+/* =========================
+   VALIDER RÉSERVATION ✅ CORRIGÉ
+========================= */
+async function validerReservation() {
+  if (!panierLignes.some(l => l.articleId && l.quantite > 0)) {
+    alert("Panier vide.");
+    return;
   }
+
+  const affaire = affaires.find(a => a.id === selectAffaire.value);
+  if (!affaire) return alert("Sélectionnez une affaire.");
+  
+  const dateDispo = new Date(inputDateDispo.value);
+  const lignesValides = panierLignes.filter(l => l.articleId && l.quantite > 0);
+  const manquants = [];
+
+  // ✅ 1. SUPPRIMER BROUILLON SI EXISTANT
+  if (draftReservationGroupId) {
+    const q = query(
+      collection(db, "reservations"),
+      where("reservationGroupId", "==", draftReservationGroupId),
+      where("statut", "==", "brouillon")
+    );
+    const snap = await getDocs(q);
+    const batch = writeBatch(db);
+    snap.forEach(d => batch.delete(d.ref));
+    await batch.commit();
+  }
+
+  // ✅ 2. CALCULER STOCK DISPONIBLE + RÉSERVER
+  for (const ligne of lignesValides) {
+    const article = articles.find(a => a.id === ligne.articleId);
+    if (!article) continue;
+    
+    const stats = statsParArticle[ligne.articleId] || { stock: 0, cump: 0 };
+    const stockPhysique = Number(stats.stock) || 0;
+    
+    // ✅ CALCUL RÉSERVATIONS EXISTANTES (UNIQUEMENT en_cours + valide)
+    const reserveExistante = reservations
+      .filter(r => r.articleId === ligne.articleId && 
+                  (r.statut === "en_cours" || r.statut === "valide"))
+      .reduce((sum, r) => sum + (Number(r.quantite) || 0), 0);
+    
+    const stockDisponible = stockPhysique - reserveExistante;
+    const qteDemandee = Number(ligne.quantite);
+    const qteReservable = Math.min(stockDisponible, qteDemandee);
+    const qteManquante = qteDemandee - qteReservable;
+
+    console.log(`Article ${article.reference}: stock=${stockPhysique}, réservé=${reserveExistante}, dispo=${stockDisponible}, demande=${qteDemandee}, reserve=${qteReservable}, manque=${qteManquante}`);
+
+    // ✅ 3. RÉSERVER LA PARTIE DISPONIBLE
+    if (qteReservable > 0) {
+      await addDoc(collection(db, "reservations"), {
+        affaireId: selectAffaire.value,
+        codeAffaire: affaire.code || "",
+        affaireLibelle: `${affaire.code || ""} - ${affaire.libelle || ""}`.trim(),
+        articleId: ligne.articleId,
+        marque: article.marque || "",
+        reference: article.reference || "",
+        libelle: article.libelle || "",
+        articleLabel: `${article.marque || ""} ${article.reference || ""} ${article.libelle || ""}`.trim(),
+        articleAllee: article.allee || "",
+        articlePlace: article.place || "",
+        articleNiveau: article.niveau || "",
+        quantite: qteReservable,  // ✅ SEULEMENT ce qui est disponible
+        dateDisponibilite: dateDispo,
+        statut: "en_cours",  // ✅ STATUT en_cours
+        prixUnitaire: stats.cump || 0,
+        createdBy: currentUserName,
+        createdAt: serverTimestamp()
+      });
+    }
+
+    // ✅ 4. AJOUTER À MANQUANTS POUR PDF (UNIQUEMENT si manque)
+    if (qteManquante > 0) {
+      manquants.push({
+        marque: article.marque || "",
+        reference: article.reference || "",
+        libelle: article.libelle || "",
+        cump: stats.cump || 0,
+        qteManquante: qteManquante  // ✅ SEULEMENT la partie manquante
+      });
+    }
+  }
+
+  // ✅ 5. RECHARGER + PDF UNIQUEMENT SI MANQUANTS
+  await chargerReservations();
+  if (window.rechargerArticlesDepuisReservations) 
+    window.rechargerArticlesDepuisReservations();
+  if (window.rechargerPreparationsDepuisArticles) 
+    window.rechargerPreparationsDepuisArticles();
+  
+  if (manquants.length > 0) {
+    console.log(`${manquants.length} articles manquants → PDF généré`);
+    genererBonAchatPDF(`${affaire.code || ""} - ${affaire.libelle || ""}`, manquants);
+  } else {
+    console.log("✅ TOUT le stock était disponible → Pas de PDF");
+  }
+
+  // ✅ 6. RESET
+  draftReservationGroupId = null;
+  panierLignes = [];
+  panierBody.innerHTML = "";
+  closePanierModal();
+  
+  const totalReserve = lignesValides.reduce((sum, l) => sum + (Number(l.quantite) || 0), 0);
+  const totalManquant = manquants.reduce((sum, m) => sum + m.qteManquante, 0);
+  
+  alert(`✅ Réservation validée !\n${totalReserve} réservés\n${totalManquant} à commander`);
+}
 
   /* =========================
      LISTENERS
@@ -561,3 +572,4 @@ document.addEventListener("DOMContentLoaded", () => {
     await chargerReservations();
   })();
 });
+
