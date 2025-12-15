@@ -440,7 +440,7 @@ async function validerReservation() {
   const lignesValides = panierLignes.filter(l => l.articleId && l.quantite > 0);
   const manquants = [];
 
-  // ✅ 1. SUPPRIMER BROUILLON SI EXISTANT
+  // 1️⃣ Supprimer brouillon si existant
   if (draftReservationGroupId) {
     const q = query(
       collection(db, "reservations"),
@@ -453,30 +453,29 @@ async function validerReservation() {
     await batch.commit();
   }
 
-  // ✅ 2. CALCULER STOCK DISPONIBLE + RÉSERVER
+  // 2️⃣ Vérification stock et réservation
   for (const ligne of lignesValides) {
     const article = articles.find(a => a.id === ligne.articleId);
     if (!article) continue;
-    
+
     const stats = statsParArticle[ligne.articleId] || { stock: 0, cump: 0 };
     const stockPhysique = Number(stats.stock) || 0;
-    
-    // ✅ CALCUL RÉSERVATIONS EXISTANTES (UNIQUEMENT en_cours + valide)
+
+    // Stock déjà réservé (en_cours + valide)
     const reserveExistante = reservations
       .filter(r => r.articleId === ligne.articleId && 
                   (r.statut === "en_cours" || r.statut === "valide"))
       .reduce((sum, r) => sum + (Number(r.quantite) || 0), 0);
-    
+
     const stockDisponible = stockPhysique - reserveExistante;
     const qteDemandee = Number(ligne.quantite);
-    const qteReservable = Math.min(stockDisponible, qteDemandee);
+    const qteReservable = Math.max(0, Math.min(stockDisponible, qteDemandee));
     const qteManquante = qteDemandee - qteReservable;
 
-    console.log(`Article ${article.reference}: stock=${stockPhysique}, réservé=${reserveExistante}, dispo=${stockDisponible}, demande=${qteDemandee}, reserve=${qteReservable}, manque=${qteManquante}`);
-
-    // ✅ 3. RÉSERVER LA PARTIE DISPONIBLE
+    // Cas stock disponible ou partiellement disponible
     if (qteReservable > 0) {
       await addDoc(collection(db, "reservations"), {
+        reservationGroupId: draftReservationGroupId || genererReservationGroupId(),
         affaireId: selectAffaire.value,
         codeAffaire: affaire.code || "",
         affaireLibelle: `${affaire.code || ""} - ${affaire.libelle || ""}`.trim(),
@@ -488,48 +487,43 @@ async function validerReservation() {
         articleAllee: article.allee || "",
         articlePlace: article.place || "",
         articleNiveau: article.niveau || "",
-        quantite: qteReservable,  // ✅ SEULEMENT ce qui est disponible
+        quantite: qteReservable,
         dateDisponibilite: dateDispo,
-        statut: "en_cours",  // ✅ STATUT en_cours
+        statut: "en_cours",
         prixUnitaire: stats.cump || 0,
         createdBy: currentUserName,
         createdAt: serverTimestamp()
       });
     }
 
-    // ✅ 4. AJOUTER À MANQUANTS POUR PDF (UNIQUEMENT si manque)
+    // Cas partiel ou totalement indisponible → ajout au PDF
     if (qteManquante > 0) {
       manquants.push({
         marque: article.marque || "",
         reference: article.reference || "",
         libelle: article.libelle || "",
         cump: stats.cump || 0,
-        qteManquante: qteManquante  // ✅ SEULEMENT la partie manquante
+        qteManquante
       });
     }
   }
 
-  // ✅ 5. RECHARGER + PDF UNIQUEMENT SI MANQUANTS
+  // 3️⃣ Rechargement UI + PDF si manquants
   await chargerReservations();
-  if (window.rechargerArticlesDepuisReservations) 
-    window.rechargerArticlesDepuisReservations();
-  if (window.rechargerPreparationsDepuisArticles) 
-    window.rechargerPreparationsDepuisArticles();
-  
+  if (window.rechargerArticlesDepuisReservations) window.rechargerArticlesDepuisReservations();
+  if (window.rechargerPreparationsDepuisArticles) window.rechargerPreparationsDepuisArticles();
+
   if (manquants.length > 0) {
-    console.log(`${manquants.length} articles manquants → PDF généré`);
     genererBonAchatPDF(`${affaire.code || ""} - ${affaire.libelle || ""}`, manquants);
-  } else {
-    console.log("✅ TOUT le stock était disponible → Pas de PDF");
   }
 
-  // ✅ 6. RESET
+  // 4️⃣ Reset
   draftReservationGroupId = null;
   panierLignes = [];
   panierBody.innerHTML = "";
   closePanierModal();
-  
-  const totalReserve = lignesValides.reduce((sum, l) => sum + (Number(l.quantite) || 0), 0);
+
+  const totalReserve = lignesValides.reduce((sum, l) => sum + (Number(l.quantite) || 0), 0) - manquants.reduce((sum, m) => sum + m.qteManquante, 0);
   const totalManquant = manquants.reduce((sum, m) => sum + m.qteManquante, 0);
   
   alert(`✅ Réservation validée !\n${totalReserve} réservés\n${totalManquant} à commander`);
@@ -572,4 +566,5 @@ async function validerReservation() {
     await chargerReservations();
   })();
 });
+
 
