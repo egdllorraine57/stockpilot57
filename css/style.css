@@ -534,6 +534,31 @@ td {
   color: #92400e;
 }
 
+/* ===== Lisibilité panier réservation ===== */
+#panierTable td,
+#panierTable th,
+#panierBody td {
+  color: var(--text-main);
+}
+
+#panierBody td:first-child {
+  font-weight: 600;
+}
+
+/* Force le texte de l'article sélectionné en clair (override inline JS) */
+#panierBody td:first-child span {
+  color: var(--text-main) !important;
+}
+
+/* ===== Surbrillance sélection préparations ===== */
+#preparationsTable tbody tr.selected {
+  background: rgba(59, 130, 246, 0.22) !important;
+  box-shadow: inset 0 0 0 2px rgba(59, 130, 246, 0.65);
+}
+
+#preparationsTable tbody tr.selected td {
+  color: #ffffff;
+}
 
 
 
