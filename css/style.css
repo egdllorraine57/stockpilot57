@@ -488,3 +488,52 @@ td {
 .user-menu-dropdown.open {
   display: block;
 }
+
+/* ===================================================== */
+/* ======= BROUILLONS RÉSERVATIONS ===================== */
+/* ===================================================== */
+
+#btnSaveDraft {
+  background: linear-gradient(135deg, #fbbf24, #f59e0b);
+  border-color: #fbbf24;
+  color: #1f2937;
+  font-weight: 600;
+  margin-top: 8px;
+  width: 100%;
+}
+
+#btnSaveDraft:hover {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  box-shadow: 0 8px 20px rgba(251, 191, 36, 0.4);
+  transform: translateY(-1px);
+}
+
+/* Boutons Modifier brouillon dans le tableau */
+td button[style*="0.75rem"] {
+  background: rgba(251, 191, 36, 0.2);
+  border-color: #fbbf24;
+  color: #fbbf24;
+  font-size: 0.75rem !important;
+  padding: 4px 8px !important;
+  min-width: 80px;
+}
+
+td button[style*="0.75rem"]:hover {
+  background: rgba(251, 191, 36, 0.4);
+  color: #92400e;
+  box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+}
+
+/* Colonne Actions tableau (centrer) */
+#reservationsTable th:last-child,
+#reservationsTable td:last-child {
+  text-align: center;
+  width: 100px;
+}
+
+/* Statut brouillon coloré */
+td:has-text("brouillon") {
+  color: #fbbf24 !important;
+  font-weight: bold;
+}
+
