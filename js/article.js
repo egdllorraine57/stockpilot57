@@ -499,86 +499,245 @@ if (btnImportArticles && importFileInput && role === "admin") {
 /**
  * ===== Impression PDF du stock (Admin) =====
  */
-function genererPdfStock() {
+async function genererPdfStock() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  const marginLeft = 10;
-  let y = 15;
+  // Helpers
+  const formatDateCourt = (d) => d.toLocaleString("fr-FR");
+  const safe = (v) => String(v ?? "");
+  const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
 
-  doc.setFontSize(14);
-  doc.text("Inventaire des articles en stock", marginLeft, y);
-  y += 8;
+  // Page metrics
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginL = 10;
+  const marginR = 10;
+  const marginT = 10;
+  const marginB = 12;
 
-  const now = new Date();
-  doc.setFontSize(10);
-  doc.text(`Généré le : ${now.toLocaleString("fr-FR")}`, marginLeft, y);
-  y += 8;
+  // Branding / footer
+  const logoUrl = "assets/logo.png";
+  const footerLine1 = "Siège social – 4 Rue aux Saussaies des Dames  F57950 Montigny lès Metz";
+  const footerLine2 = "Code APE 4321A – SAS au capital de 300 000 euros";
 
-  doc.setFontSize(9);
-  doc.text("Marque", marginLeft, y);
-  doc.text("Référence", marginLeft + 35, y);
-  doc.text("Libellé", marginLeft + 75, y);
-  doc.text("Stock", marginLeft + 140, y, { align: "right" });
-  doc.text("Empl.", marginLeft + 190, y, { align: "right" });
-  y += 5;
+  // Table layout (mm)
+  const cols = [
+    { key: "marque", label: "Marque", w: 28, align: "left" },
+    { key: "reference", label: "Référence", w: 28, align: "left" },
+    { key: "libelle", label: "Libellé", w: 74, align: "left" },
+    { key: "stock", label: "Stock", w: 18, align: "right" },
+    { key: "cump", label: "CUMP", w: 18, align: "right" },
+    { key: "empl", label: "Empl.", w: 24, align: "right" },
+  ];
 
-  doc.setLineWidth(0.2);
-  doc.line(marginLeft, y, 200, y);
-  y += 4;
+  // Colors (sobres)
+  const cHeaderBg = [2, 6, 23];          // #020617
+  const cHeaderText = [229, 231, 235];   // #e5e7eb
+  const cRowAlt = [248, 250, 252];       // #f8fafc
+  const cRow = [255, 255, 255];          // white
+  const cBorder = [226, 232, 240];       // #e2e8f0
+  const cText = [15, 23, 42];            // #0f172a
+  const cMuted = [71, 85, 105];          // #475569
+  const cBrand = [234, 88, 12];          // orange sobre proche du logo
 
+  // Data
   const articlesEnStock = articles.filter(a => {
     const stats = statsParArticle[a.id] || { stock: 0 };
     return (Number(stats.stock) || 0) > 0;
   });
 
-  doc.setFontSize(9);
-
-  articlesEnStock.forEach(a => {
-    const stats = statsParArticle[a.id] || { stock: 0 };
-    const stockQte = Number(stats.stock) || 0;
-
-    if (y > 270) {
-      doc.addPage();
-      y = 15;
-    }
-
-    const marque = a.marque || "";
-    const reference = a.reference || "";
-    const libelle = a.libelle || "";
-    const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
-
-    doc.text(marque.substring(0, 20), marginLeft, y);
-    doc.text(reference.substring(0, 20), marginLeft + 35, y);
-    doc.text(libelle.substring(0, 50), marginLeft + 75, y);
-    doc.text(formatNombre(stockQte, 2), marginLeft + 140, y, { align: "right" });
-    doc.text(location, marginLeft + 190, y, { align: "right" });
-    y += 5;
+  // Trie (optionnel): marque puis référence
+  articlesEnStock.sort((a, b) => {
+    const am = safe(a.marque).localeCompare(safe(b.marque));
+    if (am !== 0) return am;
+    return safe(a.reference).localeCompare(safe(b.reference));
   });
 
-  if (y > 250) {
-    doc.addPage();
-    y = 20;
-  } else {
-    y += 10;
+  // Logo loader (PNG/JPG)
+  async function loadImageAsDataURL(url) {
+    const res = await fetch(url, { cache: "no-store" });
+    if (!res.ok) throw new Error("Logo introuvable: " + url);
+    const blob = await res.blob();
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
   }
 
-  doc.setLineWidth(0.2);
-  doc.line(marginLeft, y, 200, y);
-  y += 8;
+  let logoDataUrl = null;
+  try {
+    logoDataUrl = await loadImageAsDataURL(logoUrl);
+  } catch (e) {
+    console.warn("Logo non chargé, PDF sans logo.", e);
+  }
 
-  const now2 = new Date();
-  doc.setFontSize(10);
-  doc.text(`Document généré le : ${now2.toLocaleString("fr-FR")}`, marginLeft, y);
-  y += 8;
-  doc.text("Certifié conforme, signature : ___________________________", marginLeft, y);
+  // Drawing blocks
+  function drawHeader(pageIndex) {
+    // Bandeau haut
+    doc.setFillColor(...cHeaderBg);
+    doc.rect(0, 0, pageWidth, 26, "F");
+
+    // Logo
+    if (logoDataUrl) {
+      // 40mm x auto (hauteur 14)
+      doc.addImage(logoDataUrl, "PNG", marginL, 6, 40, 14);
+    } else {
+      // petit rappel visuel si logo absent
+      doc.setTextColor(...cHeaderText);
+      doc.setFontSize(10);
+      doc.text("EGDL", marginL, 14);
+    }
+
+    // Titre
+    doc.setTextColor(...cHeaderText);
+    doc.setFontSize(13);
+    doc.setFont(undefined, "bold");
+    doc.text("Inventaire des articles en stock", pageWidth / 2, 12, { align: "center" });
+
+    // Date
+    doc.setFont(undefined, "normal");
+    doc.setFontSize(9);
+    doc.text(`Généré le : ${formatDateCourt(new Date())}`, pageWidth - marginR, 20, { align: "right" });
+
+    // Petit filet orange
+    doc.setDrawColor(...cBrand);
+    doc.setLineWidth(0.6);
+    doc.line(marginL, 26, pageWidth - marginR, 26);
+
+    // Reset text
+    doc.setTextColor(...cText);
+  }
+
+  function drawFooter(pageIndex, totalPages) {
+    const y = pageHeight - marginB;
+
+    doc.setDrawColor(...cBorder);
+    doc.setLineWidth(0.3);
+    doc.line(marginL, y - 6, pageWidth - marginR, y - 6);
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(...cMuted);
+    doc.text(footerLine1, marginL, y - 2);
+    doc.text(footerLine2, marginL, y + 2);
+
+    doc.text(`Page ${pageIndex} / ${totalPages}`, pageWidth - marginR, y + 2, { align: "right" });
+
+    doc.setTextColor(...cText);
+  }
+
+  function drawTableHeader(y) {
+    const x0 = marginL;
+    const h = 8;
+
+    doc.setFillColor(...cHeaderBg);
+    doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
+
+    doc.setTextColor(...cHeaderText);
+    doc.setFontSize(8);
+    doc.setFont(undefined, "bold");
+
+    let x = x0;
+    cols.forEach(col => {
+      const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
+      doc.text(col.label, tx, y + 5.5, { align: col.align });
+      x += col.w;
+    });
+
+    doc.setFont(undefined, "normal");
+    doc.setTextColor(...cText);
+
+    // Bordure bas
+    doc.setDrawColor(...cBorder);
+    doc.setLineWidth(0.3);
+    doc.line(x0, y + h, pageWidth - marginR, y + h);
+
+    return y + h;
+  }
+
+  function drawRow(y, row, isAlt) {
+    const x0 = marginL;
+    const h = 7;
+
+    doc.setFillColor(...(isAlt ? cRowAlt : cRow));
+    doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
+
+    doc.setFontSize(8.5);
+    doc.setTextColor(...cText);
+
+    let x = x0;
+
+    const cells = {
+      marque: truncate(safe(row.marque), 22),
+      reference: truncate(safe(row.reference), 22),
+      libelle: truncate(safe(row.libelle), 55),
+      stock: formatNombre(row.stock, 2),
+      cump: formatNombre(row.cump, 2),
+      empl: truncate(safe(row.empl), 18),
+    };
+
+    cols.forEach(col => {
+      const text = safe(cells[col.key]);
+      const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
+      doc.text(text, tx, y + 4.8, { align: col.align });
+      x += col.w;
+    });
+
+    // Ligne séparatrice
+    doc.setDrawColor(...cBorder);
+    doc.setLineWidth(0.2);
+    doc.line(x0, y + h, pageWidth - marginR, y + h);
+
+    return y + h;
+  }
+
+  // Build rows
+  const rows = articlesEnStock.map(a => {
+    const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
+    const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
+    return {
+      marque: a.marque || "",
+      reference: a.reference || "",
+      libelle: a.libelle || "",
+      stock: Number(stats.stock) || 0,
+      cump: Number(stats.cump) || 0,
+      empl: location,
+    };
+  });
+
+  // Render with pagination
+  let page = 1;
+  doc.setFont(undefined, "normal");
+
+  drawHeader(page);
+
+  let y = 32; // sous le bandeau
+  y = drawTableHeader(y);
+
+  const yMax = pageHeight - marginB - 10; // laisse place footer
+  rows.forEach((r, i) => {
+    if (y + 7 > yMax) {
+      doc.addPage();
+      page++;
+      drawHeader(page);
+      y = 32;
+      y = drawTableHeader(y);
+    }
+    y = drawRow(y, r, i % 2 === 1);
+  });
+
+  // Ajout des footers après coup (nb pages connu)
+  const totalPages = doc.getNumberOfPages();
+  for (let p = 1; p <= totalPages; p++) {
+    doc.setPage(p);
+    drawFooter(p, totalPages);
+  }
 
   doc.save("inventaire_stock.pdf");
 }
 
-if (btnPrintStock) {
-  btnPrintStock.addEventListener("click", genererPdfStock);
-}
 
 // Initialisation + tri
 chargerDonnees().then(() => {
@@ -590,5 +749,6 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
 
 
