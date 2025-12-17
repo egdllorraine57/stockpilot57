@@ -704,7 +704,7 @@ async function genererPdfStock() {
   doc.setFont(undefined, "bold");
   doc.setFontSize(10);
   doc.setTextColor(...cText);
-  doc.text(`Montant total du stock : ${(totalMontant, 2)}`, marginL, y);
+  doc.text(`Montant total du stock : ${formatEuro(totalMontant, 2)}`, marginL, y);
   doc.setFont(undefined, "normal");
   y += recapHeight;
 
@@ -774,4 +774,5 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
 
