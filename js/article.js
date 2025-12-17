@@ -525,7 +525,7 @@ async function genererPdfStock() {
   const marginB = 12;
 
   // Branding / footer
-  const logoUrl = "assets/logo.png";
+  const logoUrl = "assets/EGDL.png";
   const footerLine1 = "Siège social – 4 Rue aux Saussaies des Dames  F57950 Montigny lès Metz";
   const footerLine2 = "Code APE 4321A – SAS au capital de 300 000 euros";
 
@@ -752,4 +752,5 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
 
