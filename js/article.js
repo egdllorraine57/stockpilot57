@@ -111,12 +111,13 @@ function formatNombre(n, decimals = 2) {
 
 function formatEuro(n, decimals = 2) {
   if (n == null || isNaN(n)) return "";
-  return (
-    Number(n).toLocaleString("fr-FR", {
-      minimumFractionDigits: decimals,
-      maximumFractionDigits: decimals,
-    }) + " €"
-  );
+  const s = Number(n).toLocaleString("fr-FR", {
+    minimumFractionDigits: decimals,
+    maximumFractionDigits: decimals,
+  });
+  // Remplace espaces insécables (NBSP & NNBSP) par espace normal pour jsPDF
+  const clean = s.replace(/\u00A0|\u202F/g, " ");
+  return clean + " €";
 }
 
 async function chargerDonnees() {
@@ -703,7 +704,7 @@ async function genererPdfStock() {
   doc.setFont(undefined, "bold");
   doc.setFontSize(10);
   doc.setTextColor(...cText);
-  doc.text(`Montant total du stock : ${formatEuro(totalMontant, 2)}`, marginL, y);
+  doc.text(`Montant total du stock : ${(totalMontant, 2)}`, marginL, y);
   doc.setFont(undefined, "normal");
   y += recapHeight;
 
@@ -773,3 +774,4 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
