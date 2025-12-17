@@ -1,6 +1,5 @@
 // /js/article.js
 import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
 import { ajouterArticle, modifierArticle, supprimerArticle } from "./articles-add.js";
 
 console.log("XLSX global = ", window.XLSX);
@@ -9,9 +8,7 @@ console.log("type de XLSX =", typeof window.XLSX);
 const name = sessionStorage.getItem("userName");
 const role = sessionStorage.getItem("userRole");
 
-if (!name) {
-  window.location.href = "index.html";
-}
+if (!name) window.location.href = "index.html";
 
 // Infos user
 document.getElementById("currentUser").textContent = name;
@@ -62,18 +59,10 @@ let selectedId = null;
 let mode = "create";
 
 // Bouton Imprimer visible seulement pour Admin
-if (btnPrintStock) {
-  btnPrintStock.style.display = role === "admin" ? "inline-flex" : "none";
-}
-
+if (btnPrintStock) btnPrintStock.style.display = role === "admin" ? "inline-flex" : "none";
 // Bouton Import visible seulement pour Admin
-if (btnImportArticles) {
-  btnImportArticles.style.display = role === "admin" ? "inline-flex" : "none";
-}
+if (btnImportArticles) btnImportArticles.style.display = role === "admin" ? "inline-flex" : "none";
 
-/**
- * Calcule les stats d'un article (stock, réserve, dispo, CUMP, valeur)
- */
 function calculerStatsArticle(mouvsArticle, reserveQte) {
   const tri = [...mouvsArticle].sort((a, b) => {
     const da = a.date?.toDate ? a.date.toDate() : a.date || new Date(0);
@@ -120,32 +109,32 @@ function formatNombre(n, decimals = 2) {
   });
 }
 
-/**
- * Chargement des données Firestore
- */
+function formatEuro(n, decimals = 2) {
+  if (n == null || isNaN(n)) return "";
+  return (
+    Number(n).toLocaleString("fr-FR", {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    }) + " €"
+  );
+}
+
 async function chargerDonnees() {
   const snapArticles = await getDocs(collection(db, "articles"));
   articles = [];
-  snapArticles.forEach((doc) => {
-    articles.push({ id: doc.id, ...doc.data() });
-  });
+  snapArticles.forEach((doc) => articles.push({ id: doc.id, ...doc.data() }));
 
   const snapMouv = await getDocs(collection(db, "mouvements"));
   mouvements = [];
-  snapMouv.forEach((doc) => {
-    mouvements.push({ id: doc.id, ...doc.data() });
-  });
+  snapMouv.forEach((doc) => mouvements.push({ id: doc.id, ...doc.data() }));
 
   const snapRes = await getDocs(collection(db, "reservations"));
   reservationsActives = [];
   snapRes.forEach((doc) => {
     const r = doc.data();
-    if (r.articleId && r.statut === "en_cours") {
-      reservationsActives.push({ id: doc.id, ...r });
-    }
+    if (r.articleId && r.statut === "en_cours") reservationsActives.push({ id: doc.id, ...r });
   });
 
-  // Regroupement des mouvements / article
   const parArticle = {};
   mouvements.forEach((m) => {
     if (!m.articleId) return;
@@ -153,7 +142,6 @@ async function chargerDonnees() {
     parArticle[m.articleId].push(m);
   });
 
-  // Réserves par article
   const reserveParArticle = {};
   reservationsActives.forEach((r) => {
     const id = r.articleId;
@@ -168,7 +156,6 @@ async function chargerDonnees() {
     statsParArticle[articleId] = calculerStatsArticle(parArticle[articleId], reserveQte);
   });
 
-  // Exposition globale pour autres onglets
   window.statsParArticleGlobal = statsParArticle;
   window.rechargerArticlesDepuisReservations = chargerDonnees;
   window.rechargerArticlesDepuisPreparations = chargerDonnees;
@@ -187,14 +174,10 @@ function calculerValeurStockTotale() {
   valeurStockTotalEl.textContent = formatNombre(total, 2);
 }
 
-// Fonction appelée depuis mouvements si besoin
 window.recalculerArticlesDepuisMouvements = async function () {
   await chargerDonnees();
 };
 
-/**
- * Rendu du tableau
- */
 function renderTable(data) {
   tbody.innerHTML = "";
   selectedId = null;
@@ -229,11 +212,7 @@ function renderTable(data) {
 
     const tdLoc = document.createElement("td");
     tdLoc.className = "location";
-    tdLoc.innerHTML = `
-      Allée ${a.allee || "-"}<br>
-      Place ${a.place || "-"}<br>
-      Niveau ${a.niveau || "-"}
-    `;
+    tdLoc.innerHTML = `Allée ${a.allee || "-"}<br>Place ${a.place || "-"}<br>Niveau ${a.niveau || "-"}`;
 
     const stats = statsParArticle[a.id] || { stock: 0, reserve: 0, dispo: 0, cump: 0, valeur: 0 };
 
@@ -272,9 +251,6 @@ function renderTable(data) {
   });
 }
 
-/**
- * Filtre articles
- */
 searchInput.addEventListener("input", () => {
   const q = searchInput.value.trim().toLowerCase();
   if (!q) {
@@ -284,29 +260,16 @@ searchInput.addEventListener("input", () => {
   }
 
   const filtered = articles.filter((a) => {
-    const haystack = [
-      a.marque,
-      a.reference,
-      a.libelle,
-      a.unite,
-      a.categorie,
-      a.allee,
-      a.place,
-      a.niveau,
-    ]
+    const haystack = [a.marque, a.reference, a.libelle, a.unite, a.categorie, a.allee, a.place, a.niveau]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
-
     return haystack.includes(q);
   });
 
   renderTable(filtered);
 });
 
-/**
- * Modale
- */
 function openModalCreate() {
   mode = "create";
   modalTitle.textContent = "Ajouter un article";
@@ -335,7 +298,6 @@ function closeModal() {
   modalBackdrop.classList.remove("open");
 }
 
-// Boutons modale / CRUD
 btnAdd.addEventListener("click", openModalCreate);
 
 btnEdit.addEventListener("click", () => {
@@ -408,9 +370,6 @@ modalForm.addEventListener("submit", async (e) => {
 
 /**
  * ===== IMPORT EXCEL ARTICLES (admin uniquement) =====
- * Accepte:
- * - format "attendu": allee, categorie, libelle, marque, niveau, place, reference, unite
- * - ET aussi tes fichiers avec en-têtes du type: Allée, Libelé/Libellé, MARQUE, REF, unite, etc.
  */
 async function importerDepuisExcel(file) {
   if (!file) return;
@@ -424,7 +383,7 @@ async function importerDepuisExcel(file) {
       .trim()
       .toLowerCase()
       .normalize("NFD")
-      .replace(/[\u0300-\u036f]/g, ""); // retire les accents
+      .replace(/[\u0300-\u036f]/g, "");
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -456,7 +415,7 @@ async function importerDepuisExcel(file) {
           allee: String(getVal(row, "allee", "allée") ?? "").trim(),
           categorie: String(getVal(row, "categorie", "catégorie") ?? "").trim(),
           libelle: String(getVal(row, "libelle", "libellé", "libelé", "designation", "désignation") ?? "").trim(),
-          marque: String(getVal(row, "marque", "marque de l'article", "marque article", "MARQUE") ?? "").trim(),
+          marque: String(getVal(row, "marque", "marque de l'article", "MARQUE") ?? "").trim(),
           niveau: String(getVal(row, "niveau") ?? "").trim(),
           place: String(getVal(row, "place", "part", "emplacement", "rack") ?? "").trim(),
           reference: String(getVal(row, "reference", "référence", "ref") ?? "").trim(),
@@ -493,10 +452,7 @@ async function importerDepuisExcel(file) {
 }
 
 if (btnImportArticles && importFileInput && role === "admin") {
-  btnImportArticles.addEventListener("click", () => {
-    importFileInput.click();
-  });
-
+  btnImportArticles.addEventListener("click", () => importFileInput.click());
   importFileInput.addEventListener("change", () => {
     const file = importFileInput.files[0];
     if (file) importerDepuisExcel(file);
@@ -505,42 +461,36 @@ if (btnImportArticles && importFileInput && role === "admin") {
 
 /**
  * ===== Impression PDF du stock (Admin) =====
- * Logo: assets/logo.png
- * Footer: infos société
+ * Tableau compact + récap + cadre signature
  */
 async function genererPdfStock() {
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
 
-  // Helpers
-  const formatDateCourt = (d) => d.toLocaleString("fr-FR");
   const safe = (v) => String(v ?? "");
   const truncate = (s, n) => (s.length > n ? s.slice(0, n - 1) + "…" : s);
+  const formatDateCourt = (d) => d.toLocaleString("fr-FR");
 
-  // Page metrics
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginL = 10;
   const marginR = 10;
   const marginB = 12;
 
-  // Branding / footer
-  const logoUrl = "assets/EGDL.png";
+  const logoUrl = "assets/logo.png";
   const footerLine1 = "Siège social – 4 Rue aux Saussaies des Dames  F57950 Montigny lès Metz";
   const footerLine2 = "Code APE 4321A – SAS au capital de 300 000 euros";
 
-  // Table layout (mm)
-const cols = [
-  { key: "marque", label: "Marque", w: 24, align: "left" },
-  { key: "reference", label: "Réf.", w: 22, align: "left" },
-  { key: "libelle", label: "Libellé", w: 62, align: "left" },
-  { key: "empl", label: "Empl.", w: 26, align: "left" },      // déplacé ici
-  { key: "stock", label: "Qte", w: 16, align: "right" },
-  { key: "cump", label: "CUMP", w: 16, align: "right" },
-  { key: "montant", label: "Montant", w: 22, align: "right" }, // nouveau
-];
+  const cols = [
+    { key: "marque", label: "Marque", w: 22, align: "left" },
+    { key: "reference", label: "Réf.", w: 20, align: "left" },
+    { key: "libelle", label: "Libellé", w: 56, align: "left" },
+    { key: "empl", label: "Empl.", w: 24, align: "left" },
+    { key: "stock", label: "Qte", w: 15, align: "right" },
+    { key: "cump", label: "CUMP", w: 18, align: "right" },
+    { key: "montant", label: "Montant", w: 25, align: "right" },
+  ];
 
-  // Colors
   const cHeaderBg = [2, 6, 23];
   const cHeaderText = [229, 231, 235];
   const cRowAlt = [248, 250, 252];
@@ -549,18 +499,6 @@ const cols = [
   const cText = [15, 23, 42];
   const cMuted = [71, 85, 105];
   const cBrand = [234, 88, 12];
-
-  // Data
-  const articlesEnStock = articles.filter((a) => {
-    const stats = statsParArticle[a.id] || { stock: 0 };
-    return (Number(stats.stock) || 0) > 0;
-  });
-
-  articlesEnStock.sort((a, b) => {
-    const am = safe(a.marque).localeCompare(safe(b.marque));
-    if (am !== 0) return am;
-    return safe(a.reference).localeCompare(safe(b.reference));
-  });
 
   async function loadImageAsDataURL(url) {
     const res = await fetch(url, { cache: "no-store" });
@@ -585,17 +523,15 @@ const cols = [
     doc.setFillColor(...cHeaderBg);
     doc.rect(0, 0, pageWidth, 26, "F");
 
-    if (logoDataUrl) {
-      doc.addImage(logoDataUrl, "PNG", marginL, 6, 40, 14);
-    }
+    if (logoDataUrl) doc.addImage(logoDataUrl, "PNG", marginL, 6, 40, 14);
 
     doc.setTextColor(...cHeaderText);
-    doc.setFontSize(13);
+    doc.setFontSize(12.5);
     doc.setFont(undefined, "bold");
     doc.text("Inventaire des articles en stock", pageWidth / 2, 12, { align: "center" });
 
     doc.setFont(undefined, "normal");
-    doc.setFontSize(9);
+    doc.setFontSize(8.6);
     doc.text(`Généré le : ${formatDateCourt(new Date())}`, pageWidth - marginR, 20, { align: "right" });
 
     doc.setDrawColor(...cBrand);
@@ -612,7 +548,7 @@ const cols = [
     doc.setLineWidth(0.3);
     doc.line(marginL, y - 6, pageWidth - marginR, y - 6);
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(8.2);
     doc.setTextColor(...cMuted);
     doc.text(footerLine1, marginL, y - 2);
     doc.text(footerLine2, marginL, y + 2);
@@ -623,19 +559,19 @@ const cols = [
 
   function drawTableHeader(y) {
     const x0 = marginL;
-    const h = 8;
+    const h = 7.4;
 
     doc.setFillColor(...cHeaderBg);
     doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
 
     doc.setTextColor(...cHeaderText);
-    doc.setFontSize(7);
+    doc.setFontSize(6.2);
     doc.setFont(undefined, "bold");
 
     let x = x0;
     cols.forEach((col) => {
-      const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
-      doc.text(col.label, tx, y + 5.5, { align: col.align });
+      const tx = col.align === "right" ? x + col.w - 1.0 : x + 1.0;
+      doc.text(col.label, tx, y + 5.2, { align: col.align });
       x += col.w;
     });
 
@@ -651,69 +587,95 @@ const cols = [
 
   function drawRow(y, row, isAlt) {
     const x0 = marginL;
-    const h = 7;
+    const h = 6.2;
 
     doc.setFillColor(...(isAlt ? cRowAlt : cRow));
     doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
 
-    doc.setFontSize(6);
+    doc.setFontSize(6.6);
     doc.setTextColor(...cText);
 
-    let x = x0;
+    const stock = Number(row.stock) || 0;
+    const cump = Number(row.cump) || 0;
+    const montant = Number(row.montant) || 0;
+
     const cells = {
-      marque: truncate(safe(row.marque), 22),
-      reference: truncate(safe(row.reference), 22),
-      libelle: truncate(safe(row.libelle), 55),
-      stock: formatNombre(row.stock, 2),
-      cump: formatNombre(row.cump, 2),
-      empl: truncate(safe(row.empl), 18),
-      montant: formatNombre(row.montant, 2),
+      marque: truncate(safe(row.marque), 18),
+      reference: truncate(safe(row.reference), 16),
+      libelle: truncate(safe(row.libelle), 42),
+      empl: truncate(safe(row.empl), 16),
+      stock: formatNombre(stock, 2),
+      cump: formatEuro(cump, 2),
+      montant: formatEuro(montant, 2),
     };
 
+    let x = x0;
     cols.forEach((col) => {
       const text = safe(cells[col.key]);
-      const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
-      doc.text(text, tx, y + 4.8, { align: col.align });
+      const tx = col.align === "right" ? x + col.w - 1.0 : x + 1.0;
+      doc.text(text, tx, y + 4.2, { align: col.align });
       x += col.w;
     });
 
     doc.setDrawColor(...cBorder);
-    doc.setLineWidth(0.2);
+    doc.setLineWidth(0.18);
     doc.line(x0, y + h, pageWidth - marginR, y + h);
 
     return y + h;
   }
 
+  function ensureSpace(y, needed) {
+    const yMax = pageHeight - marginB - 10;
+    if (y + needed <= yMax) return y;
+    doc.addPage();
+    drawHeader();
+    y = 32;
+    y = drawTableHeader(y);
+    return y;
+  }
+
+  // Build rows + total
+  const articlesEnStock = articles
+    .filter((a) => {
+      const stats = statsParArticle[a.id] || { stock: 0 };
+      return (Number(stats.stock) || 0) > 0;
+    })
+    .sort((a, b) => {
+      const am = safe(a.marque).localeCompare(safe(b.marque));
+      if (am !== 0) return am;
+      return safe(a.reference).localeCompare(safe(b.reference));
+    });
+
   const rows = articlesEnStock.map((a) => {
-  const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
-  const stock = Number(stats.stock) || 0;
-  const cump = Number(stats.cump) || 0;
-  const montant = stock * cump;
+    const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
+    const stock = Number(stats.stock) || 0;
+    const cump = Number(stats.cump) || 0;
+    const montant = stock * cump;
+    const empl = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
 
-  const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
+    return {
+      marque: a.marque || "",
+      reference: a.reference || "",
+      libelle: a.libelle || "",
+      empl,
+      stock,
+      cump,
+      montant,
+    };
+  });
 
-  return {
-    marque: a.marque || "",
-    reference: a.reference || "",
-    libelle: a.libelle || "",
-    empl: location,          // après libellé
-    stock,
-    cump,
-    montant,                 // nouveau
-  };
-});
+  const totalMontant = rows.reduce((acc, r) => acc + (Number(r.montant) || 0), 0);
 
-  let page = 1;
+  // Render
   drawHeader();
-
   let y = 32;
   y = drawTableHeader(y);
 
   const yMax = pageHeight - marginB - 10;
+
   rows.forEach((r, i) => {
-    if (y + 7 > yMax) {
+    if (y + 6.2 > yMax) {
       doc.addPage();
-      page++;
       drawHeader();
       y = 32;
       y = drawTableHeader(y);
@@ -721,6 +683,57 @@ const cols = [
     y = drawRow(y, r, i % 2 === 1);
   });
 
+  // ===== Récap + encadré signature =====
+  // Espace mini pour récap + cadre
+  const recapHeight = 8;      // ligne récap
+  const boxHeight = 34;       // encadré
+  const spacing = 6;
+
+  // Si pas assez de place, nouvelle page (sans répéter l’en-tête de tableau)
+  if (y + spacing + recapHeight + boxHeight > yMax) {
+    doc.addPage();
+    drawHeader();
+    y = 32;
+    // pas besoin de drawTableHeader ici, c'est une page "fin de doc"
+  } else {
+    y += spacing;
+  }
+
+  // Récap total
+  doc.setFont(undefined, "bold");
+  doc.setFontSize(10);
+  doc.setTextColor(...cText);
+  doc.text(`Montant total du stock : ${formatEuro(totalMontant, 2)}`, marginL, y);
+  doc.setFont(undefined, "normal");
+  y += recapHeight;
+
+  // Encadré certifié conforme
+  const boxX = marginL;
+  const boxW = pageWidth - marginL - marginR;
+  const boxY = y + 2;
+
+  doc.setDrawColor(...cBorder);
+  doc.setLineWidth(0.5);
+  doc.rect(boxX, boxY, boxW, boxHeight);
+
+  doc.setFontSize(10);
+  doc.setTextColor(...cText);
+
+  const line1 = `Certifié conforme, le ${new Date().toLocaleDateString("fr-FR")}`;
+  const line2 = "Par :";
+  const line3 = "Signature :";
+  const sigLineY = boxY + 28;
+
+  doc.text(line1, boxX + 4, boxY + 8);
+  doc.text(line2, boxX + 4, boxY + 14);
+  doc.text(line3, boxX + 4, boxY + 20);
+
+  // Ligne signature
+  doc.setDrawColor(...cBorder);
+  doc.setLineWidth(0.4);
+  doc.line(boxX + 4, sigLineY, boxX + boxW - 4, sigLineY);
+
+  // Footer sur toutes les pages
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -747,10 +760,16 @@ chargerDonnees().then(() => {
   const tableArticles = document.getElementById("articlesTable");
   if (tableArticles && window.makeTableSortable) {
     window.makeTableSortable(tableArticles, [
-      "string", "string", "string", "string", "string", "string",
-      "number", "number", "number", "number",
+      "string",
+      "string",
+      "string",
+      "string",
+      "string",
+      "string",
+      "number",
+      "number",
+      "number",
+      "number",
     ]);
   }
 });
-
-
