@@ -32,10 +32,151 @@ document.addEventListener("DOMContentLoaded", () => {
   const selectAffaire = document.getElementById("m_affaire");
   const btnMouvCancel = document.getElementById("btnMouvCancel");
 
-  // Données
+    // Données
   let mouvements = [];
   let articles = [];
   let affaires = [];
+
+  
+// === IMPORT INVENTAIRE (Excel -> mouvements d'entrée) ===
+const btnImportInventaire = document.getElementById("btnImportInventaire");
+const inventaireFileInput = document.getElementById("inventaireFileInput");
+
+// Optionnel: restreindre à admin comme pour Articles (si tu veux)
+const role = sessionStorage.getItem("userRole");
+if (btnImportInventaire) {
+  btnImportInventaire.style.display = (role === "admin") ? "inline-flex" : "none";
+}
+
+function normalizeStr(v) {
+  return String(v ?? "").trim().toLowerCase();
+}
+
+function parseNumberFR(v) {
+  if (v === null || v === undefined || v === "") return null;
+  const s = String(v).trim().replace(/\s/g, "").replace(",", ".");
+  const n = parseFloat(s);
+  return Number.isFinite(n) ? n : null;
+}
+
+async function importerInventaireDepuisExcel(file) {
+  if (!file) return;
+  if (!window.XLSX) {
+    alert("Bibliothèque XLSX non chargée.");
+    return;
+  }
+
+  // S'assure que la liste articles est bien chargée (déjà fait à l'init normalement)
+  if (!articles || !articles.length) {
+    await loadArticles(); // fonction existante dans mouvements.js [file:3]
+  }
+
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    try {
+      const data = new Uint8Array(e.target.result);
+      const wb = XLSX.read(data, { type: "array" });
+      const wsName = wb.SheetNames[0];
+      const ws = wb.Sheets[wsName];
+
+      // 1) Tentative avec en-têtes (MARQUE, REFERENCE, Prix, Quantité)
+      let rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
+
+      // 2) Si pas d'en-têtes pertinents, on lit en mode "array" (colonnes A,B,C,D)
+      const looksLikeHeaderMode =
+        rows.length &&
+        (Object.keys(rows[0]).some(k => normalizeStr(k) === "marque") ||
+         Object.keys(rows[0]).some(k => normalizeStr(k) === "reference"));
+
+      if (!looksLikeHeaderMode) {
+        const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
+        // arr[0] = première ligne; on suppose pas d'en-tête => on prend tout
+        rows = arr
+          .filter(r => r && r.length)
+          .map(r => ({
+            MARQUE: r[0],
+            REFERENCE: r[1],
+            Prix: r[2],
+            Quantité: r[3],
+          }));
+      }
+
+      // Mapping robuste (accepte variantes de clés)
+      const mapped = rows.map((row) => {
+        const keys = Object.keys(row || {});
+        const getBy = (...cands) => {
+          const k = keys.find(kk => cands.includes(normalizeStr(kk)));
+          return k ? row[k] : "";
+        };
+
+        const marque = String(getBy("marque", "marque de l'article", "marques", "MARQUE".toLowerCase()) || row.MARQUE || "").trim();
+        const reference = String(getBy("reference", "référence", "ref", "rÉfÉrence".toLowerCase()) || row.REFERENCE || "").trim();
+        const prixUnitaire = parseNumberFR(getBy("prix", "prix unitaire", "pu") || row.Prix);
+        const quantite = parseNumberFR(getBy("quantité", "quantite", "qte") || row.Quantité);
+
+        return { marque, reference, prixUnitaire, quantite };
+      }).filter(l => l.marque && l.reference && l.quantite && l.quantite > 0);
+
+      if (!mapped.length) {
+        alert("Aucune ligne valide trouvée (attendu: Marque, Référence, Prix, Quantité).");
+        return;
+      }
+
+      if (!confirm(`Importer ${mapped.length} lignes d'inventaire (mouvements d'entrée) ?`)) return;
+
+      // Index articles par marque+ref
+      const index = new Map(
+        (articles || []).map(a => [`${normalizeStr(a.marque)}|${normalizeStr(a.reference)}`, a])
+      );
+
+      let ok = 0;
+      let notFound = 0;
+
+      for (const line of mapped) {
+        const key = `${normalizeStr(line.marque)}|${normalizeStr(line.reference)}`;
+        const article = index.get(key);
+
+        if (!article) {
+          notFound++;
+          console.warn("Article introuvable:", line.marque, line.reference);
+          continue;
+        }
+
+        await addDoc(collection(db, "mouvements"), {
+          sens: "entree",
+          articleId: article.id,
+          quantite: line.quantite,
+          prixUnitaire: (line.prixUnitaire ?? null),
+          codeAffaire: null,
+          date: serverTimestamp(),
+        });
+        ok++;
+      }
+
+      await loadMouvements(); // recharge l'affichage mouvements [file:3]
+      if (typeof window.recalculerArticlesDepuisMouvements === "function") {
+        await window.recalculerArticlesDepuisMouvements(); // recalc stock côté Articles [file:1][file:3]
+      }
+
+      alert(`Import terminé. Créés: ${ok}. Lignes ignorées (articles introuvables): ${notFound}.`);
+    } catch (err) {
+      console.error("Erreur import inventaire:", err);
+      alert("Erreur lors de la lecture/import du fichier Excel.");
+    } finally {
+      if (inventaireFileInput) inventaireFileInput.value = "";
+    }
+  };
+
+  reader.readAsArrayBuffer(file);
+}
+
+if (btnImportInventaire && inventaireFileInput) {
+  btnImportInventaire.addEventListener("click", () => inventaireFileInput.click());
+  inventaireFileInput.addEventListener("change", () => {
+    const file = inventaireFileInput.files?.[0];
+    if (file) importerInventaireDepuisExcel(file);
+  });
+}
 
   // Gestion onglets locaux (si tu les utilises encore)
   function showArticles() {
@@ -281,3 +422,4 @@ document.addEventListener("DOMContentLoaded", () => {
   })();
 
 }); // fin DOMContentLoaded
+
