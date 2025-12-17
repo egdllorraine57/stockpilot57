@@ -1,15 +1,7 @@
 // /js/article.js
+import { collection, getDocs } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-import {
-  collection,
-  getDocs
-} from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
-
-import {
-  ajouterArticle,
-  modifierArticle,
-  supprimerArticle
-} from "./articles-add.js";
+import { ajouterArticle, modifierArticle, supprimerArticle } from "./articles-add.js";
 
 console.log("XLSX global = ", window.XLSX);
 console.log("type de XLSX =", typeof window.XLSX);
@@ -93,7 +85,7 @@ function calculerStatsArticle(mouvsArticle, reserveQte) {
   let stockValeur = 0;
   let cump = 0;
 
-  tri.forEach(m => {
+  tri.forEach((m) => {
     const q = Number(m.quantite) || 0;
 
     if (m.sens === "entree") {
@@ -101,9 +93,7 @@ function calculerStatsArticle(mouvsArticle, reserveQte) {
       const valeurEntree = q * pu;
       stockValeur += valeurEntree;
       stockQte += q;
-      if (stockQte > 0) {
-        cump = stockValeur / stockQte;
-      }
+      if (stockQte > 0) cump = stockValeur / stockQte;
     } else if (m.sens === "sortie") {
       stockQte -= q;
       stockValeur -= q * cump;
@@ -119,20 +109,14 @@ function calculerStatsArticle(mouvsArticle, reserveQte) {
   const dispo = Math.max(0, stockQte - reserve);
   const valeurStock = stockQte * cump;
 
-  return {
-    stock: stockQte,
-    reserve,
-    dispo,
-    cump,
-    valeur: valeurStock
-  };
+  return { stock: stockQte, reserve, dispo, cump, valeur: valeurStock };
 }
 
 function formatNombre(n, decimals = 2) {
   if (n == null || isNaN(n)) return "";
   return Number(n).toLocaleString("fr-FR", {
     minimumFractionDigits: decimals,
-    maximumFractionDigits: decimals
+    maximumFractionDigits: decimals,
   });
 }
 
@@ -142,19 +126,19 @@ function formatNombre(n, decimals = 2) {
 async function chargerDonnees() {
   const snapArticles = await getDocs(collection(db, "articles"));
   articles = [];
-  snapArticles.forEach(doc => {
+  snapArticles.forEach((doc) => {
     articles.push({ id: doc.id, ...doc.data() });
   });
 
   const snapMouv = await getDocs(collection(db, "mouvements"));
   mouvements = [];
-  snapMouv.forEach(doc => {
+  snapMouv.forEach((doc) => {
     mouvements.push({ id: doc.id, ...doc.data() });
   });
 
   const snapRes = await getDocs(collection(db, "reservations"));
   reservationsActives = [];
-  snapRes.forEach(doc => {
+  snapRes.forEach((doc) => {
     const r = doc.data();
     if (r.articleId && r.statut === "en_cours") {
       reservationsActives.push({ id: doc.id, ...r });
@@ -163,7 +147,7 @@ async function chargerDonnees() {
 
   // Regroupement des mouvements / article
   const parArticle = {};
-  mouvements.forEach(m => {
+  mouvements.forEach((m) => {
     if (!m.articleId) return;
     if (!parArticle[m.articleId]) parArticle[m.articleId] = [];
     parArticle[m.articleId].push(m);
@@ -171,7 +155,7 @@ async function chargerDonnees() {
 
   // Réserves par article
   const reserveParArticle = {};
-  reservationsActives.forEach(r => {
+  reservationsActives.forEach((r) => {
     const id = r.articleId;
     const q = Number(r.quantite) || 0;
     if (!reserveParArticle[id]) reserveParArticle[id] = 0;
@@ -179,7 +163,7 @@ async function chargerDonnees() {
   });
 
   statsParArticle = {};
-  Object.keys(parArticle).forEach(articleId => {
+  Object.keys(parArticle).forEach((articleId) => {
     const reserveQte = reserveParArticle[articleId] || 0;
     statsParArticle[articleId] = calculerStatsArticle(parArticle[articleId], reserveQte);
   });
@@ -196,7 +180,7 @@ async function chargerDonnees() {
 
 function calculerValeurStockTotale() {
   let total = 0;
-  articles.forEach(a => {
+  articles.forEach((a) => {
     const stats = statsParArticle[a.id] || { valeur: 0 };
     total += Number(stats.valeur) || 0;
   });
@@ -217,7 +201,7 @@ function renderTable(data) {
   btnEdit.disabled = true;
   btnDelete.disabled = true;
 
-  data.forEach(a => {
+  data.forEach((a) => {
     const tr = document.createElement("tr");
     tr.dataset.id = a.id;
 
@@ -277,7 +261,7 @@ function renderTable(data) {
     tr.appendChild(tdValeur);
 
     tr.addEventListener("click", () => {
-      Array.from(tbody.querySelectorAll("tr")).forEach(r => r.classList.remove("selected"));
+      Array.from(tbody.querySelectorAll("tr")).forEach((r) => r.classList.remove("selected"));
       tr.classList.add("selected");
       selectedId = a.id;
       btnEdit.disabled = false;
@@ -299,7 +283,7 @@ searchInput.addEventListener("input", () => {
     return;
   }
 
-  const filtered = articles.filter(a => {
+  const filtered = articles.filter((a) => {
     const haystack = [
       a.marque,
       a.reference,
@@ -308,11 +292,12 @@ searchInput.addEventListener("input", () => {
       a.categorie,
       a.allee,
       a.place,
-      a.niveau
+      a.niveau,
     ]
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
+
     return haystack.includes(q);
   });
 
@@ -355,19 +340,19 @@ btnAdd.addEventListener("click", openModalCreate);
 
 btnEdit.addEventListener("click", () => {
   if (!selectedId) return;
-  const article = articles.find(a => a.id === selectedId);
+  const article = articles.find((a) => a.id === selectedId);
   if (article) openModalEdit(article);
 });
 
 btnDelete.addEventListener("click", async () => {
   if (!selectedId) return;
-  const article = articles.find(a => a.id === selectedId);
+  const article = articles.find((a) => a.id === selectedId);
   if (!article) return;
 
   if (confirm(`Supprimer "${article.libelle || article.reference}" ?`)) {
     try {
       await supprimerArticle(selectedId);
-      articles = articles.filter(a => a.id !== selectedId);
+      articles = articles.filter((a) => a.id !== selectedId);
       delete statsParArticle[selectedId];
       renderTable(articles);
       calculerValeurStockTotale();
@@ -400,7 +385,7 @@ modalForm.addEventListener("submit", async (e) => {
     categorie: inputCategorie.value.trim(),
     allee: inputAllee.value.trim(),
     place: inputPlace.value.trim(),
-    niveau: inputNiveau.value.trim()
+    niveau: inputNiveau.value.trim(),
   };
 
   try {
@@ -409,7 +394,7 @@ modalForm.addEventListener("submit", async (e) => {
       articles.push(newArticle);
     } else if (mode === "edit" && selectedId) {
       const updated = await modifierArticle(selectedId, data);
-      const index = articles.findIndex(a => a.id === selectedId);
+      const index = articles.findIndex((a) => a.id === selectedId);
       if (index !== -1) articles[index] = updated;
     }
 
@@ -423,7 +408,9 @@ modalForm.addEventListener("submit", async (e) => {
 
 /**
  * ===== IMPORT EXCEL ARTICLES (admin uniquement) =====
- * Fichier type : colonnes allee, categorie, libelle, marque, niveau, place, reference, unite
+ * Accepte:
+ * - format "attendu": allee, categorie, libelle, marque, niveau, place, reference, unite
+ * - ET aussi tes fichiers avec en-têtes du type: Allée, Libelé/Libellé, MARQUE, REF, unite, etc.
  */
 async function importerDepuisExcel(file) {
   if (!file) return;
@@ -431,6 +418,13 @@ async function importerDepuisExcel(file) {
     alert("Bibliothèque XLSX non chargée.");
     return;
   }
+
+  const normalizeKey = (s) =>
+    String(s ?? "")
+      .trim()
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, ""); // retire les accents
 
   const reader = new FileReader();
   reader.onload = async (e) => {
@@ -442,25 +436,40 @@ async function importerDepuisExcel(file) {
 
       const json = XLSX.utils.sheet_to_json(ws, { defval: "" });
 
-      const aInserer = json.map(row => ({
-        allee: String(row.allee ?? "").trim(),
-        categorie: String(row.categorie ?? "").trim(),
-        libelle: String(row.libelle ?? "").trim(),
-        marque: String(row.marque ?? "").trim(),
-        niveau: String(row.niveau ?? "").trim(),
-        place: String(row.place ?? "").trim(),
-        reference: String(row.reference ?? "").trim(),
-        unite: String(row.unite ?? "").trim() || "u"
-      })).filter(a => a.reference || a.libelle);
+      const withKeyMap = json.map((row) => {
+        const keymap = {};
+        Object.keys(row).forEach((k) => (keymap[normalizeKey(k)] = k));
+        return { ...row, __keymap: keymap };
+      });
+
+      const getVal = (row, ...cands) => {
+        const map = row.__keymap || {};
+        for (const c of cands) {
+          const k = map[normalizeKey(c)];
+          if (k !== undefined) return row[k];
+        }
+        return undefined;
+      };
+
+      const aInserer = withKeyMap
+        .map((row) => ({
+          allee: String(getVal(row, "allee", "allée") ?? "").trim(),
+          categorie: String(getVal(row, "categorie", "catégorie") ?? "").trim(),
+          libelle: String(getVal(row, "libelle", "libellé", "libelé", "designation", "désignation") ?? "").trim(),
+          marque: String(getVal(row, "marque", "marque de l'article", "marque article", "MARQUE") ?? "").trim(),
+          niveau: String(getVal(row, "niveau") ?? "").trim(),
+          place: String(getVal(row, "place", "part", "emplacement", "rack") ?? "").trim(),
+          reference: String(getVal(row, "reference", "référence", "ref") ?? "").trim(),
+          unite: String(getVal(row, "unite", "unité") ?? "").trim() || "u",
+        }))
+        .filter((a) => a.reference || a.libelle);
 
       if (!aInserer.length) {
         alert("Aucune ligne valide trouvée dans le fichier.");
         return;
       }
 
-      if (!confirm(`Importer ${aInserer.length} articles depuis Excel ?`)) {
-        return;
-      }
+      if (!confirm(`Importer ${aInserer.length} articles depuis Excel ?`)) return;
 
       for (const art of aInserer) {
         try {
@@ -490,14 +499,14 @@ if (btnImportArticles && importFileInput && role === "admin") {
 
   importFileInput.addEventListener("change", () => {
     const file = importFileInput.files[0];
-    if (file) {
-      importerDepuisExcel(file);
-    }
+    if (file) importerDepuisExcel(file);
   });
 }
 
 /**
  * ===== Impression PDF du stock (Admin) =====
+ * Logo: assets/logo.png
+ * Footer: infos société
  */
 async function genererPdfStock() {
   const { jsPDF } = window.jspdf;
@@ -513,7 +522,6 @@ async function genererPdfStock() {
   const pageHeight = doc.internal.pageSize.getHeight();
   const marginL = 10;
   const marginR = 10;
-  const marginT = 10;
   const marginB = 12;
 
   // Branding / footer
@@ -531,30 +539,28 @@ async function genererPdfStock() {
     { key: "empl", label: "Empl.", w: 24, align: "right" },
   ];
 
-  // Colors (sobres)
-  const cHeaderBg = [2, 6, 23];          // #020617
-  const cHeaderText = [229, 231, 235];   // #e5e7eb
-  const cRowAlt = [248, 250, 252];       // #f8fafc
-  const cRow = [255, 255, 255];          // white
-  const cBorder = [226, 232, 240];       // #e2e8f0
-  const cText = [15, 23, 42];            // #0f172a
-  const cMuted = [71, 85, 105];          // #475569
-  const cBrand = [234, 88, 12];          // orange sobre proche du logo
+  // Colors
+  const cHeaderBg = [2, 6, 23];
+  const cHeaderText = [229, 231, 235];
+  const cRowAlt = [248, 250, 252];
+  const cRow = [255, 255, 255];
+  const cBorder = [226, 232, 240];
+  const cText = [15, 23, 42];
+  const cMuted = [71, 85, 105];
+  const cBrand = [234, 88, 12];
 
   // Data
-  const articlesEnStock = articles.filter(a => {
+  const articlesEnStock = articles.filter((a) => {
     const stats = statsParArticle[a.id] || { stock: 0 };
     return (Number(stats.stock) || 0) > 0;
   });
 
-  // Trie (optionnel): marque puis référence
   articlesEnStock.sort((a, b) => {
     const am = safe(a.marque).localeCompare(safe(b.marque));
     if (am !== 0) return am;
     return safe(a.reference).localeCompare(safe(b.reference));
   });
 
-  // Logo loader (PNG/JPG)
   async function loadImageAsDataURL(url) {
     const res = await fetch(url, { cache: "no-store" });
     if (!res.ok) throw new Error("Logo introuvable: " + url);
@@ -574,40 +580,27 @@ async function genererPdfStock() {
     console.warn("Logo non chargé, PDF sans logo.", e);
   }
 
-  // Drawing blocks
-  function drawHeader(pageIndex) {
-    // Bandeau haut
+  function drawHeader() {
     doc.setFillColor(...cHeaderBg);
     doc.rect(0, 0, pageWidth, 26, "F");
 
-    // Logo
     if (logoDataUrl) {
-      // 40mm x auto (hauteur 14)
       doc.addImage(logoDataUrl, "PNG", marginL, 6, 40, 14);
-    } else {
-      // petit rappel visuel si logo absent
-      doc.setTextColor(...cHeaderText);
-      doc.setFontSize(10);
-      doc.text("EGDL", marginL, 14);
     }
 
-    // Titre
     doc.setTextColor(...cHeaderText);
     doc.setFontSize(13);
     doc.setFont(undefined, "bold");
     doc.text("Inventaire des articles en stock", pageWidth / 2, 12, { align: "center" });
 
-    // Date
     doc.setFont(undefined, "normal");
     doc.setFontSize(9);
     doc.text(`Généré le : ${formatDateCourt(new Date())}`, pageWidth - marginR, 20, { align: "right" });
 
-    // Petit filet orange
     doc.setDrawColor(...cBrand);
     doc.setLineWidth(0.6);
     doc.line(marginL, 26, pageWidth - marginR, 26);
 
-    // Reset text
     doc.setTextColor(...cText);
   }
 
@@ -622,7 +615,6 @@ async function genererPdfStock() {
     doc.setTextColor(...cMuted);
     doc.text(footerLine1, marginL, y - 2);
     doc.text(footerLine2, marginL, y + 2);
-
     doc.text(`Page ${pageIndex} / ${totalPages}`, pageWidth - marginR, y + 2, { align: "right" });
 
     doc.setTextColor(...cText);
@@ -640,7 +632,7 @@ async function genererPdfStock() {
     doc.setFont(undefined, "bold");
 
     let x = x0;
-    cols.forEach(col => {
+    cols.forEach((col) => {
       const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
       doc.text(col.label, tx, y + 5.5, { align: col.align });
       x += col.w;
@@ -649,7 +641,6 @@ async function genererPdfStock() {
     doc.setFont(undefined, "normal");
     doc.setTextColor(...cText);
 
-    // Bordure bas
     doc.setDrawColor(...cBorder);
     doc.setLineWidth(0.3);
     doc.line(x0, y + h, pageWidth - marginR, y + h);
@@ -668,7 +659,6 @@ async function genererPdfStock() {
     doc.setTextColor(...cText);
 
     let x = x0;
-
     const cells = {
       marque: truncate(safe(row.marque), 22),
       reference: truncate(safe(row.reference), 22),
@@ -678,14 +668,13 @@ async function genererPdfStock() {
       empl: truncate(safe(row.empl), 18),
     };
 
-    cols.forEach(col => {
+    cols.forEach((col) => {
       const text = safe(cells[col.key]);
       const tx = col.align === "right" ? x + col.w - 1.5 : x + 1.5;
       doc.text(text, tx, y + 4.8, { align: col.align });
       x += col.w;
     });
 
-    // Ligne séparatrice
     doc.setDrawColor(...cBorder);
     doc.setLineWidth(0.2);
     doc.line(x0, y + h, pageWidth - marginR, y + h);
@@ -693,8 +682,7 @@ async function genererPdfStock() {
     return y + h;
   }
 
-  // Build rows
-  const rows = articlesEnStock.map(a => {
+  const rows = articlesEnStock.map((a) => {
     const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
     const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
     return {
@@ -707,28 +695,24 @@ async function genererPdfStock() {
     };
   });
 
-  // Render with pagination
   let page = 1;
-  doc.setFont(undefined, "normal");
+  drawHeader();
 
-  drawHeader(page);
-
-  let y = 32; // sous le bandeau
+  let y = 32;
   y = drawTableHeader(y);
 
-  const yMax = pageHeight - marginB - 10; // laisse place footer
+  const yMax = pageHeight - marginB - 10;
   rows.forEach((r, i) => {
     if (y + 7 > yMax) {
       doc.addPage();
       page++;
-      drawHeader(page);
+      drawHeader();
       y = 32;
       y = drawTableHeader(y);
     }
     y = drawRow(y, r, i % 2 === 1);
   });
 
-  // Ajout des footers après coup (nb pages connu)
   const totalPages = doc.getNumberOfPages();
   for (let p = 1; p <= totalPages; p++) {
     doc.setPage(p);
@@ -738,6 +722,17 @@ async function genererPdfStock() {
   doc.save("inventaire_stock.pdf");
 }
 
+// Bouton "Imprimer le stock" (Admin) — version robuste
+if (btnPrintStock) {
+  btnPrintStock.addEventListener("click", async () => {
+    try {
+      await genererPdfStock();
+    } catch (err) {
+      console.error("Erreur génération PDF:", err);
+      alert("Erreur lors de la génération du PDF (voir console).");
+    }
+  });
+}
 
 // Initialisation + tri
 chargerDonnees().then(() => {
@@ -745,10 +740,7 @@ chargerDonnees().then(() => {
   if (tableArticles && window.makeTableSortable) {
     window.makeTableSortable(tableArticles, [
       "string", "string", "string", "string", "string", "string",
-      "number", "number", "number", "number"
+      "number", "number", "number", "number",
     ]);
   }
 });
-
-
-
