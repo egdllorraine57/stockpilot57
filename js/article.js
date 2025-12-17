@@ -530,14 +530,15 @@ async function genererPdfStock() {
   const footerLine2 = "Code APE 4321A – SAS au capital de 300 000 euros";
 
   // Table layout (mm)
-  const cols = [
-    { key: "marque", label: "Marque", w: 28, align: "left" },
-    { key: "reference", label: "Référence", w: 28, align: "left" },
-    { key: "libelle", label: "Libellé", w: 74, align: "left" },
-    { key: "stock", label: "Stock", w: 18, align: "right" },
-    { key: "cump", label: "CUMP", w: 18, align: "right" },
-    { key: "empl", label: "Empl.", w: 24, align: "right" },
-  ];
+const cols = [
+  { key: "marque", label: "Marque", w: 24, align: "left" },
+  { key: "reference", label: "Réf.", w: 22, align: "left" },
+  { key: "libelle", label: "Libellé", w: 62, align: "left" },
+  { key: "empl", label: "Empl.", w: 26, align: "left" },      // déplacé ici
+  { key: "stock", label: "Qte", w: 16, align: "right" },
+  { key: "cump", label: "CUMP", w: 16, align: "right" },
+  { key: "montant", label: "Montant", w: 22, align: "right" }, // nouveau
+];
 
   // Colors
   const cHeaderBg = [2, 6, 23];
@@ -628,7 +629,7 @@ async function genererPdfStock() {
     doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
 
     doc.setTextColor(...cHeaderText);
-    doc.setFontSize(8);
+    doc.setFontSize(7);
     doc.setFont(undefined, "bold");
 
     let x = x0;
@@ -655,7 +656,7 @@ async function genererPdfStock() {
     doc.setFillColor(...(isAlt ? cRowAlt : cRow));
     doc.rect(x0, y, pageWidth - marginL - marginR, h, "F");
 
-    doc.setFontSize(8.5);
+    doc.setFontSize(6);
     doc.setTextColor(...cText);
 
     let x = x0;
@@ -666,6 +667,7 @@ async function genererPdfStock() {
       stock: formatNombre(row.stock, 2),
       cump: formatNombre(row.cump, 2),
       empl: truncate(safe(row.empl), 18),
+      montant: formatNombre(row.montant, 2),
     };
 
     cols.forEach((col) => {
@@ -683,17 +685,23 @@ async function genererPdfStock() {
   }
 
   const rows = articlesEnStock.map((a) => {
-    const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
-    const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
-    return {
-      marque: a.marque || "",
-      reference: a.reference || "",
-      libelle: a.libelle || "",
-      stock: Number(stats.stock) || 0,
-      cump: Number(stats.cump) || 0,
-      empl: location,
-    };
-  });
+  const stats = statsParArticle[a.id] || { stock: 0, cump: 0 };
+  const stock = Number(stats.stock) || 0;
+  const cump = Number(stats.cump) || 0;
+  const montant = stock * cump;
+
+  const location = `A${a.allee || "-"} P${a.place || "-"} N${a.niveau || "-"}`;
+
+  return {
+    marque: a.marque || "",
+    reference: a.reference || "",
+    libelle: a.libelle || "",
+    empl: location,          // après libellé
+    stock,
+    cump,
+    montant,                 // nouveau
+  };
+});
 
   let page = 1;
   drawHeader();
@@ -744,3 +752,4 @@ chargerDonnees().then(() => {
     ]);
   }
 });
+
