@@ -30,13 +30,15 @@ document.addEventListener("DOMContentLoaded", () => {
   // ------------------------------------------------------------
   const mouvModalBackdrop = document.getElementById("mouvModalBackdrop");
   const mouvForm = document.getElementById("mouvForm");
-  const selectSens = document.getElementById("msens");
-  const selectArticle = document.getElementById("marticle");
-  const inputQuantite = document.getElementById("mquantite");
-  const prixGroup = document.getElementById("mprixgroup");
-  const inputPrix = document.getElementById("mprix");
-  const affaireGroup = document.getElementById("maffairegroup");
-  const selectAffaire = document.getElementById("maffaire");
+  const selectSens     = document.getElementById("m_sens");
+  const selectArticle  = document.getElementById("m_article");
+  const inputQuantite  = document.getElementById("m_quantite");
+
+  const prixGroup      = document.getElementById("m_prix_group");
+  const inputPrix      = document.getElementById("m_prix");
+
+  const affaireGroup   = document.getElementById("m_affaire_group");
+  const selectAffaire  = document.getElementById("m_affaire");
   const btnMouvCancel = document.getElementById("btnMouvCancel");
   const mouvModalClose = document.getElementById("mouvModalClose");
 
@@ -448,3 +450,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 });
+
