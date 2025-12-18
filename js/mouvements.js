@@ -1,4 +1,5 @@
 // /js/mouvements.js
+
 import {
   collection,
   getDocs,
@@ -9,18 +10,24 @@ import {
 document.addEventListener("DOMContentLoaded", () => {
   const { db } = window._firebase; // exposé par firebase-config.js [file:5]
 
-  // Onglets et sections (optionnel, tu as aussi une gestion centralisée dans home.html)
+  // ------------------------------------------------------------
+  // (OPTIONNEL) Références onglets/sections
+  // ------------------------------------------------------------
   const tabArticles = document.getElementById("tab-articles");
   const tabMouvements = document.getElementById("tab-mouvements");
   const articlesSection = document.getElementById("articlesSection");
   const mouvementsSection = document.getElementById("mouvementsSection");
 
+  // ------------------------------------------------------------
   // Table mouvements
+  // ------------------------------------------------------------
   const mouvBody = document.getElementById("mouvementsBody");
   const mouvSearchInput = document.getElementById("mouvSearchInput");
   const btnMouvAdd = document.getElementById("btnMouvAdd");
 
-  // Modale Mouvement (IDs d'origine home.html) [file:2]
+  // ------------------------------------------------------------
+  // Modale Mouvement (IDs d'origine home.html)
+  // ------------------------------------------------------------
   const mouvModalBackdrop = document.getElementById("mouvModalBackdrop");
   const mouvForm = document.getElementById("mouvForm");
   const selectSens = document.getElementById("msens");
@@ -33,7 +40,9 @@ document.addEventListener("DOMContentLoaded", () => {
   const btnMouvCancel = document.getElementById("btnMouvCancel");
   const mouvModalClose = document.getElementById("mouvModalClose");
 
+  // ------------------------------------------------------------
   // Données
+  // ------------------------------------------------------------
   let mouvements = [];
   let articles = [];
   let affaires = [];
@@ -75,6 +84,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     const reader = new FileReader();
+
     reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target.result);
@@ -84,12 +94,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
         // 1) Mode "objets" (avec en-têtes)
         let rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
-
         const looksLikeHeaderMode =
           rows.length &&
-          (Object.keys(rows[0]).some(k => normalizeStr(k) === "marque") ||
-           Object.keys(rows[0]).some(k => normalizeStr(k) === "reference") ||
-           Object.keys(rows[0]).some(k => normalizeStr(k) === "référence"));
+          (
+            Object.keys(rows[0]).some(k => normalizeStr(k) === "marque") ||
+            Object.keys(rows[0]).some(k => normalizeStr(k) === "reference") ||
+            Object.keys(rows[0]).some(k => normalizeStr(k) === "référence")
+          );
 
         // 2) Sinon mode "array" (colonnes A,B,C,D)
         if (!looksLikeHeaderMode) {
@@ -153,6 +164,7 @@ document.addEventListener("DOMContentLoaded", () => {
             codeAffaire: null,
             date: serverTimestamp(),
           });
+
           ok++;
         }
 
@@ -163,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
 
         alert(`Import terminé. Créés: ${ok}. Lignes ignorées (articles introuvables): ${notFound}.`);
+
       } catch (err) {
         console.error("Erreur import inventaire:", err);
         alert("Erreur lors de la lecture/import du fichier Excel.");
@@ -183,26 +196,29 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================
-  // Navigation onglets (local)
+  // Navigation onglets (local) - DÉSACTIVÉE
   // =========================
-  function showArticles() {
-    if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
-    tabArticles.classList.add("active");
-    tabMouvements.classList.remove("active");
-    articlesSection.style.display = "block";
-    mouvementsSection.style.display = "none";
-  }
-
-  function showMouvements() {
-    if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
-    tabMouvements.classList.add("active");
-    tabArticles.classList.remove("active");
-    articlesSection.style.display = "none";
-    mouvementsSection.style.display = "block";
-  }
-
-  if (tabArticles) tabArticles.addEventListener("click", showArticles);
-  if (tabMouvements) tabMouvements.addEventListener("click", showMouvements);
+  // PROBLÈME: home.html a déjà une gestion centralisée des onglets,
+  // donc ces listeners doublons peuvent provoquer des états UI incohérents. [file:2]
+  //
+  // function showArticles() {
+  //   if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
+  //   tabArticles.classList.add("active");
+  //   tabMouvements.classList.remove("active");
+  //   articlesSection.style.display = "block";
+  //   mouvementsSection.style.display = "none";
+  // }
+  //
+  // function showMouvements() {
+  //   if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
+  //   tabMouvements.classList.add("active");
+  //   tabArticles.classList.remove("active");
+  //   articlesSection.style.display = "none";
+  //   mouvementsSection.style.display = "block";
+  // }
+  //
+  // if (tabArticles) tabArticles.addEventListener("click", showArticles);
+  // if (tabMouvements) tabMouvements.addEventListener("click", showMouvements);
 
   // =========================
   // Chargement Firestore
@@ -210,11 +226,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadArticles() {
     const snap = await getDocs(collection(db, "articles"));
     articles = [];
+
     if (selectArticle) selectArticle.innerHTML = "";
 
     snap.forEach((docSnap) => {
       const data = docSnap.data();
       const id = docSnap.id;
+
       articles.push({ id, ...data });
 
       if (selectArticle) {
@@ -229,11 +247,13 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadAffaires() {
     const snap = await getDocs(collection(db, "affaires"));
     affaires = [];
+
     if (selectAffaire) selectAffaire.innerHTML = "";
 
     snap.forEach((docSnap) => {
       const data = docSnap.data();
       const id = docSnap.id;
+
       affaires.push({ id, ...data });
 
       if (selectAffaire) {
@@ -248,9 +268,11 @@ document.addEventListener("DOMContentLoaded", () => {
   async function loadMouvements() {
     const snap = await getDocs(collection(db, "mouvements"));
     mouvements = [];
+
     snap.forEach((docSnap) => {
       mouvements.push({ id: docSnap.id, ...docSnap.data() });
     });
+
     renderMouvements(mouvements);
   }
 
@@ -265,6 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function renderMouvements(data) {
     if (!mouvBody) return;
+
     mouvBody.innerHTML = "";
 
     data.forEach((m) => {
@@ -277,6 +300,7 @@ document.addEventListener("DOMContentLoaded", () => {
       tdSens.textContent = m.sens === "entree" ? "Entrée" : "Sortie";
 
       const article = articles.find(a => a.id === m.articleId);
+
       const tdArt = document.createElement("td");
       tdArt.textContent = article
         ? `${article.marque || ""} - ${article.reference || ""} - ${article.libelle || ""}`
@@ -305,6 +329,7 @@ document.addEventListener("DOMContentLoaded", () => {
   if (mouvSearchInput) {
     mouvSearchInput.addEventListener("input", () => {
       const q = mouvSearchInput.value.trim().toLowerCase();
+
       if (!q) {
         renderMouvements(mouvements);
         return;
@@ -313,6 +338,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const filtered = mouvements.filter((m) => {
         const article = articles.find(a => a.id === m.articleId);
         const sensStr = m.sens === "entree" ? "entrée" : "sortie";
+
         const haystack = [
           sensStr,
           m.codeAffaire,
@@ -333,10 +359,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================
   function openMouvModal() {
     if (!mouvForm || !selectSens || !prixGroup || !affaireGroup || !mouvModalBackdrop) return;
+
     mouvForm.reset();
     selectSens.value = "entree";
     prixGroup.style.display = "block";
     affaireGroup.style.display = "none";
+
     mouvModalBackdrop.classList.add("open");
     if (inputQuantite) inputQuantite.focus();
   }
@@ -388,7 +416,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const sens = selectSens?.value;
       const articleId = selectArticle?.value;
-      const quantite = inputQuantite?.value ? parseFloat(inputQuantite.value.replace(",", ".")) : NaN;
+      const quantite = inputQuantite?.value
+        ? parseFloat(inputQuantite.value.replace(",", "."))
+        : NaN;
 
       const prixUnitaire =
         sens === "entree" && inputPrix && inputPrix.value
