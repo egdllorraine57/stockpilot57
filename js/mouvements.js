@@ -1,4 +1,8 @@
 // /js/mouvements.js
+console.log("mouvements.js chargé");
+window.__mouvementsLoaded = true;
+alert("mouvements.js chargé");
+
 
 import {
   collection,
@@ -469,3 +473,4 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 });
+
