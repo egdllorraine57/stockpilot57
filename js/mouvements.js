@@ -1,8 +1,4 @@
-// /js/mouvements.js
-console.log("mouvements.js chargé");
-window.__mouvementsLoaded = true;
-
-
+// /js/mouvements.js (version DEBUG)
 
 import {
   collection,
@@ -11,16 +7,27 @@ import {
   serverTimestamp
 } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
 
-document.addEventListener("DOMContentLoaded", () => {
-  const { db } = window._firebase; // exposé par firebase-config.js [file:5]
+console.log("mouvements.js chargé (DEBUG)");
 
-  // ------------------------------------------------------------
-  // (OPTIONNEL) Références onglets/sections
-  // ------------------------------------------------------------
-  const tabArticles = document.getElementById("tab-articles");
-  const tabMouvements = document.getElementById("tab-mouvements");
-  const articlesSection = document.getElementById("articlesSection");
-  const mouvementsSection = document.getElementById("mouvementsSection");
+document.addEventListener("DOMContentLoaded", () => {
+  alert("DOMContentLoaded mouvements.js (DEBUG)");
+
+  // --- Firebase / DB (robuste : window.firebase OU window._firebase) ---
+  const firebaseRoot = window.firebase || window._firebase;
+  console.log("firebaseRoot:", firebaseRoot);
+
+  if (!firebaseRoot) {
+    alert("BLOCK: firebaseRoot absent (window.firebase/window._firebase)");
+    return;
+  }
+
+  const db = firebaseRoot.db || firebaseRoot; // selon comment tu exposes
+  if (!db) {
+    alert("BLOCK: db introuvable dans firebaseRoot");
+    return;
+  }
+
+  alert("OK: db trouvé");
 
   // ------------------------------------------------------------
   // Table mouvements
@@ -28,13 +35,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const mouvBody = document.getElementById("mouvementsBody");
   const mouvSearchInput = document.getElementById("mouvSearchInput");
   const btnMouvAdd = document.getElementById("btnMouvAdd");
-  console.log("btnMouvAdd trouvé ?", !!btnMouvAdd, btnMouvAdd);
-if (btnMouvAdd) {
-  btnMouvAdd.addEventListener("click", () => {
-    console.log("CLICK btnMouvAdd OK");
-    alert("click OK");
-  });
-}
+
+  alert("DOM: btnMouvAdd trouvé ? " + (!!btnMouvAdd));
 
   // ------------------------------------------------------------
   // Modale Mouvement (IDs d'origine home.html)
@@ -51,20 +53,17 @@ if (btnMouvAdd) {
   const btnMouvCancel = document.getElementById("btnMouvCancel");
   const mouvModalClose = document.getElementById("mouvModalClose");
 
-  // ------------------------------------------------------------
   // Données
-  // ------------------------------------------------------------
   let mouvements = [];
   let articles = [];
   let affaires = [];
 
   // =========================
-  // IMPORT INVENTAIRE (Excel)
+  // IMPORT INVENTAIRE (Excel) (inchangé, mais je garde)
   // =========================
   const btnImportInventaire = document.getElementById("btnImportInventaire");
   const inventaireFileInput = document.getElementById("inventaireFileInput");
 
-  // Optionnel: restreindre à admin
   const role = sessionStorage.getItem("userRole");
   if (btnImportInventaire) {
     btnImportInventaire.style.display = (role === "admin") ? "inline-flex" : "none";
@@ -89,13 +88,11 @@ if (btnMouvAdd) {
       return;
     }
 
-    // S'assure que les articles sont chargés
     if (!articles || !articles.length) {
       await loadArticles();
     }
 
     const reader = new FileReader();
-
     reader.onload = async (e) => {
       try {
         const data = new Uint8Array(e.target.result);
@@ -103,7 +100,6 @@ if (btnMouvAdd) {
         const wsName = wb.SheetNames[0];
         const ws = wb.Sheets[wsName];
 
-        // 1) Mode "objets" (avec en-têtes)
         let rows = XLSX.utils.sheet_to_json(ws, { defval: "" });
         const looksLikeHeaderMode =
           rows.length &&
@@ -113,7 +109,6 @@ if (btnMouvAdd) {
             Object.keys(rows[0]).some(k => normalizeStr(k) === "référence")
           );
 
-        // 2) Sinon mode "array" (colonnes A,B,C,D)
         if (!looksLikeHeaderMode) {
           const arr = XLSX.utils.sheet_to_json(ws, { header: 1, defval: "" });
           rows = arr
@@ -126,7 +121,6 @@ if (btnMouvAdd) {
             }));
         }
 
-        // Mapping robuste
         const mapped = rows.map((row) => {
           const keys = Object.keys(row || {});
           const getBy = (...cands) => {
@@ -149,7 +143,6 @@ if (btnMouvAdd) {
 
         if (!confirm(`Importer ${mapped.length} lignes d'inventaire (mouvements d'entrée) ?`)) return;
 
-        // Index articles par marque|ref
         const index = new Map(
           (articles || []).map(a => [`${normalizeStr(a.marque)}|${normalizeStr(a.reference)}`, a])
         );
@@ -185,8 +178,7 @@ if (btnMouvAdd) {
           await window.recalculerArticlesDepuisMouvements();
         }
 
-        alert(`Import terminé. Créés: ${ok}. Lignes ignorées (articles introuvables): ${notFound}.`);
-
+        alert(`Import terminé. Créés: ${ok}. Lignes ignorées: ${notFound}.`);
       } catch (err) {
         console.error("Erreur import inventaire:", err);
         alert("Erreur lors de la lecture/import du fichier Excel.");
@@ -207,34 +199,10 @@ if (btnMouvAdd) {
   }
 
   // =========================
-  // Navigation onglets (local) - DÉSACTIVÉE
-  // =========================
-  // PROBLÈME: home.html a déjà une gestion centralisée des onglets,
-  // donc ces listeners doublons peuvent provoquer des états UI incohérents. [file:2]
-  //
-  // function showArticles() {
-  //   if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
-  //   tabArticles.classList.add("active");
-  //   tabMouvements.classList.remove("active");
-  //   articlesSection.style.display = "block";
-  //   mouvementsSection.style.display = "none";
-  // }
-  //
-  // function showMouvements() {
-  //   if (!articlesSection || !mouvementsSection || !tabArticles || !tabMouvements) return;
-  //   tabMouvements.classList.add("active");
-  //   tabArticles.classList.remove("active");
-  //   articlesSection.style.display = "none";
-  //   mouvementsSection.style.display = "block";
-  // }
-  //
-  // if (tabArticles) tabArticles.addEventListener("click", showArticles);
-  // if (tabMouvements) tabMouvements.addEventListener("click", showMouvements);
-
-  // =========================
-  // Chargement Firestore
+  // Firestore loads
   // =========================
   async function loadArticles() {
+    alert("loadArticles() start");
     const snap = await getDocs(collection(db, "articles"));
     articles = [];
 
@@ -253,9 +221,12 @@ if (btnMouvAdd) {
         selectArticle.appendChild(option);
       }
     });
+
+    alert("loadArticles() OK, count=" + articles.length);
   }
 
   async function loadAffaires() {
+    alert("loadAffaires() start");
     const snap = await getDocs(collection(db, "affaires"));
     affaires = [];
 
@@ -274,9 +245,12 @@ if (btnMouvAdd) {
         selectAffaire.appendChild(option);
       }
     });
+
+    alert("loadAffaires() OK, count=" + affaires.length);
   }
 
   async function loadMouvements() {
+    alert("loadMouvements() start");
     const snap = await getDocs(collection(db, "mouvements"));
     mouvements = [];
 
@@ -284,11 +258,12 @@ if (btnMouvAdd) {
       mouvements.push({ id: docSnap.id, ...docSnap.data() });
     });
 
+    alert("loadMouvements() OK, count=" + mouvements.length);
     renderMouvements(mouvements);
   }
 
   // =========================
-  // Rendu + filtre
+  // Render + filter
   // =========================
   function formatDate(ts) {
     if (!ts) return "";
@@ -366,36 +341,72 @@ if (btnMouvAdd) {
   }
 
   // =========================
-  // Modale mouvement (CRUD)
+  // Modale open/close
   // =========================
   function openMouvModal() {
-    if (!mouvForm || !selectSens || !prixGroup || !affaireGroup || !mouvModalBackdrop) return;
+    alert("openMouvModal() ENTER -- VERSION DEBUG 14:14");
+
+    // Vérifie tous les éléments
+    alert("openMouvModal check: backdrop=" + (!!mouvModalBackdrop) +
+      " form=" + (!!mouvForm) +
+      " sens=" + (!!selectSens) +
+      " prixGroup=" + (!!prixGroup) +
+      " affaireGroup=" + (!!affaireGroup));
+
+    if (!mouvModalBackdrop || !mouvForm || !selectSens || !prixGroup || !affaireGroup) {
+      alert("BLOCK: un élément modale est introuvable (voir alert précédente)");
+      return;
+    }
 
     mouvForm.reset();
     selectSens.value = "entree";
     prixGroup.style.display = "block";
     affaireGroup.style.display = "none";
 
+    alert("Avant classList.add('open') => class=" + mouvModalBackdrop.className);
     mouvModalBackdrop.classList.add("open");
-    alert("classList=" + mouvModalBackdrop.className);
-    if (inputQuantite) inputQuantite.focus();
+    alert("Après classList.add('open') => class=" + mouvModalBackdrop.className);
+
+    // Diagnostic: force display (si CSS n'applique pas)
+    // (tu pourras enlever après)
+    mouvModalBackdrop.style.display = "flex";
+
+    alert("Fin openMouvModal()");
   }
 
   function closeMouvModal() {
     if (mouvModalBackdrop) mouvModalBackdrop.classList.remove("open");
   }
 
+  // =========================
+  // Listener bouton Créer un mouvement
+  // =========================
   if (btnMouvAdd) {
     btnMouvAdd.addEventListener("click", async () => {
-  alert("avant loadArticles/loadAffaires");
-  await loadArticles();
-  await loadAffaires();
-  alert("avant openMouvModal");
-  openMouvModal();
-  alert("après openMouvModal");
-});
+      alert("CLICK btnMouvAdd (handler start)");
+
+      try {
+        alert("avant loadArticles()");
+        await loadArticles();
+        alert("après loadArticles()");
+
+        alert("avant loadAffaires()");
+        await loadAffaires();
+        alert("après loadAffaires()");
+
+        alert("avant openMouvModal()");
+        openMouvModal();
+        alert("après openMouvModal()");
+      } catch (err) {
+        console.error("Erreur au clic Créer un mouvement:", err);
+        alert("CATCH erreur au clic (voir console)");
+      }
+    });
+  } else {
+    alert("BLOCK: btnMouvAdd introuvable");
   }
 
+  // Sens => affiche prix OU affaire
   if (selectSens) {
     selectSens.addEventListener("change", () => {
       if (selectSens.value === "entree") {
@@ -425,9 +436,12 @@ if (btnMouvAdd) {
     });
   }
 
+  // Submit création mouvement
   if (mouvForm) {
     mouvForm.addEventListener("submit", async (e) => {
       e.preventDefault();
+
+      alert("SUBMIT mouvForm");
 
       const sens = selectSens?.value;
       const articleId = selectArticle?.value;
@@ -459,6 +473,7 @@ if (btnMouvAdd) {
         date: serverTimestamp()
       });
 
+      alert("addDoc OK");
       await loadMouvements();
 
       if (typeof window.recalculerArticlesDepuisMouvements === "function") {
@@ -466,25 +481,20 @@ if (btnMouvAdd) {
       }
 
       closeMouvModal();
+      alert("Fermeture modale OK");
     });
   }
 
-  // =========================
-  // Init + tri
-  // =========================
+  // Init
   (async () => {
-    await loadArticles();
-    await loadMouvements();
-
-    const tableMouv = document.getElementById("mouvementsTable");
-    if (tableMouv && window.makeTableSortable) {
-      window.makeTableSortable(tableMouv, [
-        "date", "string", "string", "number", "number", "string"
-      ]);
+    try {
+      alert("INIT start (loadArticles + loadMouvements)");
+      await loadArticles();
+      await loadMouvements();
+      alert("INIT OK");
+    } catch (e) {
+      console.error("INIT mouvements error:", e);
+      alert("INIT ERROR (voir console)");
     }
   })();
 });
-
-
-
-
