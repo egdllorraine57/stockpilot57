@@ -377,6 +377,7 @@ if (btnMouvAdd) {
     affaireGroup.style.display = "none";
 
     mouvModalBackdrop.classList.add("open");
+    alert("classList=" + mouvModalBackdrop.className);
     if (inputQuantite) inputQuantite.focus();
   }
 
@@ -483,6 +484,7 @@ if (btnMouvAdd) {
     }
   })();
 });
+
 
 
 
