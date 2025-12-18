@@ -1,7 +1,7 @@
 // /js/mouvements.js
 console.log("mouvements.js chargé");
 window.__mouvementsLoaded = true;
-alert("mouvements.js chargé");
+
 
 
 import {
@@ -28,6 +28,13 @@ document.addEventListener("DOMContentLoaded", () => {
   const mouvBody = document.getElementById("mouvementsBody");
   const mouvSearchInput = document.getElementById("mouvSearchInput");
   const btnMouvAdd = document.getElementById("btnMouvAdd");
+  console.log("btnMouvAdd trouvé ?", !!btnMouvAdd, btnMouvAdd);
+if (btnMouvAdd) {
+  btnMouvAdd.addEventListener("click", () => {
+    console.log("CLICK btnMouvAdd OK");
+    alert("click OK");
+  });
+}
 
   // ------------------------------------------------------------
   // Modale Mouvement (IDs d'origine home.html)
@@ -473,4 +480,5 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   })();
 });
+
 
