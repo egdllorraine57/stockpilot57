@@ -386,10 +386,13 @@ if (btnMouvAdd) {
 
   if (btnMouvAdd) {
     btnMouvAdd.addEventListener("click", async () => {
-      await loadArticles();
-      await loadAffaires();
-      openMouvModal();
-    });
+  alert("avant loadArticles/loadAffaires");
+  await loadArticles();
+  await loadAffaires();
+  alert("avant openMouvModal");
+  openMouvModal();
+  alert("après openMouvModal");
+});
   }
 
   if (selectSens) {
@@ -480,5 +483,6 @@ if (btnMouvAdd) {
     }
   })();
 });
+
 
 
